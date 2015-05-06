@@ -494,7 +494,7 @@ function ProcessIt: integer;
       gV, spg  :IInterface;
       i, WindSpeed, isRain: integer;
       letIn: integer;
-      st, localString, hexStr, spgType: string;
+      st, localString, hexStr, spgType, ovHex, nrHex: string;
       AddedIndex,precipNum: integer; //used to sort RS list from auto sorted currentlist
       new_override, oFormId, oLoadOrderFormID: IInterface; //used to search
       new_record: IInterface;
@@ -533,6 +533,8 @@ function ProcessIt: integer;
         Exit;
         end;
       end;
+      ovHex := HexFormID(new_override);
+      nrHex := HexFormID(new_record);
       seev(new_record, 'EDID', ('RSP_' + geev(new_record,'EDID - Editor ID')));
       seev(new_record, 'DATA\Trans Delta', 4);
       AddMessage('----  Created: '+Name(new_record));
@@ -540,6 +542,8 @@ function ProcessIt: integer;
       //There will be a bool to see if the player wants to turn off wind speed for rain to match RS
       precipNum := genv(wthrMR,'MNAM - Precipitation Type');
       
+      //creates a constant Global Variable that houses the current weather's wind speed,  
+      //this is used to calculate particle emitter rotation for Frostfall Tents
       WindSpeed := geev(new_record,'DATA - Data\Wind Speed');
       gV := wbCopyElementToFile(globalVariable, RSPFile, True, True);
       seev(gV , 'EDID - Editor ID', 'WS_'+IntToStr(WindSpeed));
@@ -561,27 +565,27 @@ function ProcessIt: integer;
       //removes wind variation for snow - allows for more accurate snow direction for Frostfall Tents
       if bWillRemoveSnowSpread then begin
         if spgType ='Snow' then begin
-        seev(new_override,'DATA - Data\Wind Direction Range', 0);
-        seev(new_record,'DATA - Data\Wind Direction Range', 0);
+        seev(new_override,'DATA\Wind Direction Range', 0);
+        seev(new_record,'DATA\Wind Direction Range', 0);
         end;
       end;
       //Removes wind speed for rain, rain will only fall vertically
       if bWillRemoveRainWS then begin
         if (spgType ='Rain') then begin
-        seev(new_override,'DATA - Data\Wind Speed', 0);
-        seev(new_record,'DATA - Data\Wind Speed', 0); 
+        seev(new_override,'DATA\Wind Speed', 0);
+        seev(new_record,'DATA\Wind Speed', 0); 
         end;
       end;
       //removes the visual effects, like fog and in-your-face snowflakes from weather while under shelter
       if bWillRemoveVE then 
       begin
-        seev(new_record,'NNAM - Visual Effect', '0')
+        seev(new_record,'NNAM', '0');
       end;
       //Add RS weathers to all regions supported by real shelter
       if bWillUpdateRegions then 
       begin
-        if bUsingSkyrimWeathers or not(Pos('00',HexFormID(new_override)) = 1) then begin
-          AddToRegions(RSPFile,FormID(new_record), HexFormID(new_override), Name(new_record), regionWTHRCount);
+        if bUsingSkyrimWeathers or not(Pos('00',ovHex) = 1) then begin
+          AddToRegions(RSPFile,FormID(new_record), ovHex, Name(new_record), regionWTHRCount);
           AddMessage('--Added ' + Name(new_record) +' To All Appropriate Regions');
         end else begin
           AddMessage('---Skipping: This Weather Is Not Used In Any Region');
@@ -591,29 +595,29 @@ function ProcessIt: integer;
       if bWillUpdateFFLists then 
       begin 
         if Pos(getLocalHexID(new_override, true), FFCombinedFormIDs) > 0 then begin
-          FFSevereList.Append(HexFormID(new_record));
+          FFSevereList.Append(nrHex);
         end;
         if Pos(getLocalHexID(new_override, true), FFVanillaFormIDs) > 0 then begin
-          FFSevereList.Append(HexFormID(new_override));
+          FFSevereList.Append(ovHex);
         end;
+        AddMessage('--Weather Used In Frostfall''s Severe Weather List!');
       end;
       
       if bWillUpdateMlmList then begin
-      
+        if MLMList.IndexOf(ovHex) <> -1 then begin 
+        MLMList.Append(nrHex);
+        AddMessage('--Weather Used In Minty''s Lightning List!');
       end;
       
-      //creates a constant Global Variable that houses the current weather's wind speed,  
-      //this is used to calculate particle emitter rotation for Frostfall Tents
-
         
-        //Adding both override and new weather records into stringlists that are used for updating the _weatherlist.ini file
-      AddedIndex := idCurrents.Add(HexFormID(new_override));
-      idRSs.Insert(AddedIndex, HexFormID(new_record));
+      //Adding both override and new weather records into stringlists that are used for updating the _weatherlist.ini file
+      AddedIndex := idCurrents.Add(ovHex);
+      idRSs.Insert(AddedIndex, nrHex);
       WSStringList.Insert(AddedIndex,HexFormID(gV));
       localString := getLocalHexID(new_override, true);
       idToSearch.Append(localString);
       localString := getLocalHexID(new_record, true);
-      idToAdd.Add(localString);
+      idToAdd.Append(localString);
       Result := 0;
       
     end;
@@ -764,6 +768,20 @@ procedure GetFormListIDs(localID: string; sFile: IInterface; var tList: TStringL
     for i := 0 to Pred(ElementCount(tForm)) do begin
       AddMessage('-Adding '+ tList.Add(HexFormID(ElementByIndex(tForm, i))) +' to List');
     end;
+  end;
+  
+procedure SetFormListIDs(localID: String; sFile: IInterface; var dFile: IInterface; tSList: TStringList);
+  var
+    fileForm: IInterface;
+  begin
+    while length(localID) < 6 do
+      localID := '0'+localID;
+    fileForm := GrabFormByLocalID(localID, sFile);
+    if OverrideCount(MasterOrSelf(fileForm)) > 0 then
+      fileForm := WinningOverride(MasterOrSelf(fileForm));
+    AddRequiredElementMasters(fileForm, dFile, false);
+    fileForm := wbCopyElementToFile(fileForm, dFile,false,true); 
+    slev(fileForm, tsList);
   end;
   
 
@@ -966,9 +984,10 @@ function finalize: integer;
         AddMessage(' ');
       end;
       
-      if bHasMlm and bWillUpdateMlmList then begin
+      if bWillUpdateMlmList then begin
         AddMessage(' ');
         AddMessage('=== Minty''s Lightning Modifications ===');
+        SetFormListIDs('0000000', FileByIndex(MLMIndex), RSPFile, MLMList);
         AddMessage(' ');
         AddMessage('Add MLM Code');
       end
