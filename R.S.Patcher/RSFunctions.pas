@@ -317,7 +317,7 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
 	//bCorrupt,bRegMod,bHasWeatherList,bHasBackupList,bFreshRSP: boolean;
 
 	var
-		bCorrupt,bRegMod,bHasWeatherList,bHasBackupList,bFreshRSP,bHasFF,bHasRSFF,bHasPW,bHasCot,bHasWB, bHasRSRO : Boolean;
+		bCorrupt,bRegMod,bHasWeatherList,bHasBackupList,bFreshRSP,bHasFF,bHasRSFF,bHasWOW,bHasCot,bHasWB,bHasRSRO,bHasMLM : Boolean;
 		i : Integer;
 		ffOutline, rsOutline, ffRSOutline, miscOutline, rsroOutline: TGroupBox;
 		ff, ff2,rs,rs2, rs3, wb, rsro: TCheckBox;
@@ -335,7 +335,7 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
 		Inc(i);
 		bFreshRSP := boolList[i];
 		Inc(i);
-		bHasPW := boolList[i];
+		bHasWOW := boolList[i];
 		Inc(i);
 		bHasRSFF := boolList[i];
 		Inc(i);
@@ -346,6 +346,8 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
 		bHasWB := boolList[i];
 		Inc(i);
 		bHasRSRO := boolList[i];
+		Inc(i)
+		bHasMLM := boolList[i];
 
 
 		Form1.Height := 600;
