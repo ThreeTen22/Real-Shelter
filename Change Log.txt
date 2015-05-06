@@ -1,0 +1,19 @@
+1.4.0.5
+Reupload of 1.4.0.4 with working .zip file
+
+1.4.0.4
+R.S.Patcher:
+-Fixed Crashes Caused By Non Weatherlist Users
+
+1.4.0.3
+Reupload
+
+1.4.0.2 
+Real Shelter:
+  -Misc Error Fixes In MCM Menu
+  -Removed buggy fxambgentlyfallingsnow00.nif that was causing invisible snow.  
+   (Manual Deletion Required For non-mo users.  Please refer to the update text file included in the zip)
+R.S.Patcher:
+  -Version Checking
+  -Now Properly Adds Invisible Rain/Snow
+  -Misc Message Changes

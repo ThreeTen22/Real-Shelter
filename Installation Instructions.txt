@@ -1,0 +1,53 @@
+Installation  Real Shelter Is Now Even Easier To Install!
+Remember:  If you have never used Tes5edit before, please install it correctly http://www.nexusmods.com/skyrim/mods/25859/?
+After installation, run the program at least once (open it up then close out).
+
+NMM Users!
+1. Install via Mod Manager
+
+2. Move RSPatch.esp to the very bottom of your load order
+
+3. Move RealShelter.esp as high up in your load order as you can, or let loot take care of it.  I usually place it before any mods that modify the land in any way. (Dungeon mods, city mods etc).
+
+4. Goto Your Game Folder By Clicking:
+https://dl.dropboxusercontent.com/u/1258152/GameFolder.png
+
+5. From There Goto "Data/R.S.Patcher" and double click RSPatch.tes5pas!
+https://dl.dropboxusercontent.com/u/1258152/RSPatchertes5pas.png
+
+6.  When TES5EDIT Opens Up Showing Your List Of Files.   Just Press OK!
+https://dl.dropboxusercontent.com/u/1258152/MasterPlugin%20Selection.png
+
+7. Follow the patching instructions  (The program will guide you) and when finished close the program (it will prompt you to save RSPatch.esp, press ok).
+
+7. Play!
+
+
+Mod Organizer Users!
+1. Install via Mod Manager
+
+2. Move RSPatch.esp to the very bottom of your load order
+
+3. Move RealShelter.esp as high up in your load order as you can, or let loot take care of it. 
+I usually place it before any mods that modify the land in any way.
+(Dungeon mods, city mods etc).
+
+4. Select The Data Tab:
+https://dl.dropboxusercontent.com/u/1258152/DataTab.png
+
+5.  Scroll down, expand R.S.Patcher folder and right click RSPatch.bat and go Add as Executable
+(DO NOT SELECT OPEN/EXECUTE - WILL NOT WORK!)
+
+
+6.  Press Ok To add New Executable:
+
+7. Select RSPatcher from the executable list, then hit Run:
+https://dl.dropboxusercontent.com/u/1258152/RSPatcherBat_Run.png
+*From now on, every time you need to repatch or reinstall real shelter, you can select RSPatcher from the drop-down menu (and skipping steps 4-6).
+
+8.  When TES5EDIT Opens Up Showing Your List Of Files.   Just Press OK!
+https://dl.dropboxusercontent.com/u/1258152/MasterPlugin%20Selection.png
+
+9. Follow the patching instructions  (The program will guide you) and when finished close the program (it will prompt you to save RSPatch.esp, press ok).
+
+10. Play!
