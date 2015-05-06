@@ -311,7 +311,7 @@ procedure createOverrideBox(var frm: TObject;var rg: TObject;var pnl: TObject;va
 
 // NOT A GLOBAL FUNCTION!
 procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObject;var rg:TGroupBox;var btnOk: TButton;var btnAbort: TButton;var btnCancel: TButton; var bQuitting: Boolean;
-			    var bWillUpdateRegions:boolean;var bWillUpdateWarburg:boolean; var bWillUpdateFFLists:boolean; var bWillRemoveVE:boolean;var bWillUseBlankSPG:boolean;var bWillRemoveSnowSpread:boolean;var bWillRemoveRainWS:boolean;var bWillAddWthrToMlm:boolean;var bWillXferWoWMesh:boolean;
+			    var bWillUpdateRegions:boolean;var bWillUpdateWarburg:boolean; var bWillUpdateFFLists:boolean; var bWillRemoveVE:boolean;var bWillUseBlankSPG:boolean;var bWillRemoveSnowSpread:boolean;var bWillRemoveRainWS:boolean;var bWillUpdateMlmList:boolean;var bWillXferWoWMesh:boolean;
 			    var boolList: TList; var results: TModalResult);
 
 	//bCorrupt,bRegMod,bHasWeatherList,bHasBackupList,bFreshRSP: boolean;
