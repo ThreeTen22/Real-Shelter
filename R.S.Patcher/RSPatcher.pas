@@ -33,21 +33,23 @@ uses RSFunctions;
     SPGR, SPGS : IInterface;
 //These are the stringlists which usually hold formids
     slText, idToAdd, idToSearch, idToRemove, idCurrents, idRSs, FFOWlist, WSStringList, rspMasters : TStringList;
-    regionData, FFSevereList : TStringList;
+    regionData, FFSevereList, MLMList: TStringList;
     regionWTHRCount :TList;
 //Ini-Modification
 //--Holds Directory Info
     directory, eDir, bDir, skyDir: string;
 //--Houses the Actual ini files we want to modify
     iniCtrl, iniCrtlb: TMemIniFile;
-//Specific Mod checks (in order: Real Shelter:Frostfall Tents, Frostfall 2.6, Pure Weather, Climates of Tamriel, Warburg 3d paper world map, Real Shelter Rain Overhaul)
-    bHasRSFF, bHasFF, bHasPW, bHasCoT, bHasWB, bHasRSRO: boolean;
+//Specific Mod checks (in order: Real Shelter:Frostfall Tents, Frostfall 2.6, WondersOfWeather, Climates of Tamriel, Warburg 3d paper world map, Real Shelter Rain Overhaul, Minty's Lightning Mod)
+    bHasRSFF, bHasFF, bHasWOW, bHasCoT, bHasWB, bHasRSRO, bHasMLM: boolean;
 //File Index's that I reference constantly 
-    RSPFIndex, RSFIndex, CoTIndex, PWIndex, FFIndex: integer;
+    RSPFIndex, RSFIndex, CoTIndex, PWIndex, FFIndex, MLMIndex: integer;
 //Real Shelter Modification Bools
-    bWillUpdateRegions, bWillRemoveVE, bWillUseBlankSPG, bWillShelterFXRain, bWillRemoveSnowSpread, bWillRemoveRainWS : boolean;
-//Frostfall Modification Bools
+    bWillUpdateRegions, bWillRemoveVE, bWillUseBlankSPG, bWillShelterFXRain, bWillRemoveSnowSpread, bWillRemoveRainWS, bWillUpdateMlmList, bWillXferWowMesh: boolean;
+//Frostfall Modification Vars
     bWillUpdateFFLists:boolean;
+//Mintys Lightning Vars
+    bWillUpdateMintys: boolean;
 //Misc
     bWillUpdateWarburg, bUsingSkyrimWeathers: boolean;
     bDebugging, bQuitting: boolean;
@@ -143,12 +145,13 @@ function findAllTheFiles: integer;
     bRegMod := false;
     bCorrupt := false;
    
-    bHasPW := false;
+    bHasWOW := false;
     bHasRSFF := false;
     bHasFF := false;
     bHasCot := false;
     bHasWB := false;
     bHasRSRO := false;
+    bHasMLM := false;
     bWillUpdateFFLists := false;
     bWillUpdateWarburg := false;
     bWillUpdateRegions := true;
@@ -156,6 +159,7 @@ function findAllTheFiles: integer;
     bWillUseBlankSPG := false;
     bWillShelterFXRain := false;
     bWillRemoveSnowSpread := false;
+    s1 := Lowercase(s1);
     for a := 0 to (FileCount - 1) do 
     begin
       s1 := GetFileName(FileByIndex(a));
@@ -164,35 +168,40 @@ function findAllTheFiles: integer;
         AddMessage('s= ' + s1 + ' at i '+ IntToStr(a));
       end;
 
-      if (Lowercase(s1) = 'realshelter.esp') then 
+      if (s1 = 'realshelter.esp') then 
       begin
         RSFile := FileByIndex(a);
         RSFIndex := a;
       end
-      else if(Lowercase(s1) = 'rspatch.esp') then 
+      else if(s1 = 'rspatch.esp') then 
       begin
         RSPFile := FileByIndex(a);
         RSPFIndex := a;
       end
-      else if(Lowercase(s1) = 'pureweather.esp') then 
+      else if(s1 = 'wondersofweather.esp') then 
       begin
-        bHasPW := true;
+        bHasWOW := true;
         PWIndex := a;
       end
-      else if(Lowercase(s1) = 'realshelterff.esp') then 
+      else if(s1 = 'realshelterff.esp') then 
       begin
         RSFFFile := FileByIndex(a);
         bHasRSFF := true;
       end
-      else if(Lowercase(s1) = 'chesko_frostfall.esp') then 
+      else if(s1 = 'chesko_frostfall.esp') then 
       begin
         bHasFF := true;
         FFIndex := a;
       end
-      else if(Lowercase(s1) = 'climatesoftamriel.esm') then 
+      else if(s1 = 'climatesoftamriel.esm') then 
       begin
         bHasCoT := true;
         CoTIndex := a;
+      end
+      else if (s1 = 'mintylightningmod.esp') then
+      begin
+        bHasMLM := true;
+        MLMIndex := a;
       end
       else if Pos('3d paper world map',Lowercase(s1))  > 0 then
       begin
@@ -368,14 +377,15 @@ function GatherIniInfo: integer;
       boolList.Add(bHasWeatherList);
       boolList.Add(bHasBackupList);
       boolList.Add(bFreshRSP);
-      boolList.Add(bHasPW);
+      boolList.Add(bHasWOW);
       boolList.Add(bHasRSFF);
       boolList.Add(bHasFF);
       boolList.Add(bHasCot);
       boolList.Add(bHasWB);
       boolList.Add(bHasRSRO);
+      boolList.Add(bHasMLM);
       createResearchBox(Form1,DiagBox,pnl1,rg,btnOk,btnAbort,btnCancel, 
-                          bQuitting, bWillUpdateRegions, bWillUpdateWarburg, bWillUpdateFFLists, bWillRemoveVE,bWillUseBlankSPG,bWillRemoveSnowSpread,bWillRemoveRainWS,
+                          bQuitting, bWillUpdateRegions, bWillUpdateWarburg, bWillUpdateFFLists, bWillRemoveVE,bWillUseBlankSPG,bWillRemoveSnowSpread,bWillRemoveRainWS,bWillUpdateMlmList,bWillXferWowMesh
                           boolList, results);
     if results = mrOk then 
       Result := -1
@@ -484,7 +494,7 @@ function ProcessIt: integer;
       gV, spg  :IInterface;
       i, WindSpeed, isRain: integer;
       letIn: integer;
-      st, localString, hexStr, spgType: string;
+      st, localString, hexStr, spgType, ovHex, nrHex: string;
       AddedIndex,precipNum: integer; //used to sort RS list from auto sorted currentlist
       new_override, oFormId, oLoadOrderFormID: IInterface; //used to search
       new_record: IInterface;
@@ -492,114 +502,124 @@ function ProcessIt: integer;
       IDAppend: IInterface;
       test : variant;
     begin
-      if(bUpdatingPlugin) then
-      begin
-        //checking to see if it is the winning override and has precipitation, will exit if not
-        if not IsWinningOverride(wthrMR) then exit;
-        st := geev(wthrMR,'MNAM - Precipitation Type');
-        if st = '' then exit;
-        if st = 'NULL - Null Reference [00000000]' then exit;
-        st := geev(wthrMR,'EDID - Editor ID');
-        
-        if Pos('FXMagic', st) > 0 then exit;
-        if bHasCoT then
-          if Pos('CoTAsh', st) > 0 then exit;
-        if Pos('DLC', Uppercase(st)) = 1 then exit;
-        
-        //Copies the selected record as both an override and a new record.
-        //Modifies the new record to not have any precip or to use a dummy precipitation.
-        //If Selected, will also add the new records into any regions that has their override brother.
-        //If frostfall is installed and the option selected it will add sheltered weather into the appropriate formlists.
-        try
-          AddRequiredElementMasters(wthrMR, RSPFile, false);
-          AddMessage(' ');
-          AddMessage('--  Grabbing: '+ Name(wthrMR));
-          new_override := wbCopyElementToFile(wthrMR, RSPFile, False, True);
-          new_record := wbCopyElementToFile(wthrMR, RSPFile, True, True);
-        except
-          On E : Exception do begin
-          AddMessage('--  Grabbing: '+ Name(wthrMR) + ' FAILED! Most Likely due to containing errenous weather info. Please contact the mod author regarding this record!');
-          Remove(new_override);
-          Remove(new_record);
-          Exit;
-          end;
+      if not(bUpdatingPlugin) then Exit;
+      //checking to see if it is the winning override and has precipitation, will exit if not
+      if not IsWinningOverride(wthrMR) then exit;
+      st := geev(wthrMR,'MNAM');
+      if st = '' then exit;
+      if st = 'NULL - Null Reference [00000000]' then exit;
+      st := geev(wthrMR,'EDID');
+      
+      if Pos('FXMagic', st) > 0 then exit;
+      if bHasCoT then
+        if Pos('CoTAsh', st) > 0 then exit;
+      if Pos('DLC', Uppercase(st)) = 1 then exit;
+  
+      //Copies the selected record as both an override and a new record.
+      //Modifies the new record to not have any precip or to use a dummy precipitation.
+      //If Selected, will also add the new records into any regions that has their override brother.
+      //If frostfall is installed and the option selected it will add sheltered weather into the appropriate formlists.
+      try
+        AddRequiredElementMasters(wthrMR, RSPFile, false);
+        AddMessage(' ');
+        AddMessage('--  Grabbing: '+ Name(wthrMR));
+        new_override := wbCopyElementToFile(wthrMR, RSPFile, False, True);
+        new_record := wbCopyElementToFile(wthrMR, RSPFile, True, True);
+      except
+        On E : Exception do begin
+        AddMessage('--  Grabbing: '+ Name(wthrMR) + ' FAILED! Most Likely due to containing errenous weather info. Please contact the mod author regarding this record!');
+        Remove(new_override);
+        Remove(new_record);
+        Exit;
         end;
-        seev(new_record, 'EDID - Editor ID', ('RSP_' + geev(new_record,'EDID - Editor ID')));
-        seev(new_record, 'DATA\Trans Delta', 4);
-        AddMessage('----  Created: '+Name(new_record));
-        //This tests whether the weather is rain or not
-        //There will be a bool to see if the player wants to turn off wind speed for rain to match RS
-        precipNum := genv(wthrMR,'MNAM - Precipitation Type');
-        spg := RecordByFormID(GetFile(wthrMR), precipNum, false);
-        spgType := geev(spg,'DATA\[9]');
-        if bWillUseBlankSPG then 
-        begin
-          if spgType = 'Rain' then
-          seev(new_record, 'MNAM - Precipitation Type', HexFormID(SPGR))
-          else
-          seev(new_record, 'MNAM - Precipitation Type', HexFormID(SPGS));
-        end
-        else begin
-        seev(new_record, 'MNAM - Precipitation Type', '0');
-        end;
-        //removes wind variation for snow - allows for more accurate snow direction for Frostfall Tents
-        if bWillRemoveSnowSpread then begin
-          if spgType ='Snow' then begin
-          seev(new_override,'DATA - Data\Wind Direction Range', 0);
-          seev(new_record,'DATA - Data\Wind Direction Range', 0);
-          end;
-        end;
-        //Removes wind speed for rain, rain will only fall vertically
-        if bWillRemoveRainWS then begin
-          if (spgType ='Rain') then begin
-          seev(new_override,'DATA - Data\Wind Speed', 0);
-          seev(new_record,'DATA - Data\Wind Speed', 0); 
-          end;
-        end;
-        //removes the visual effects, like fog and in-your-face snowflakes from weather while under shelter
-        if bWillRemoveVE then 
-        begin
-          seev(new_record,'NNAM - Visual Effect', '0')
-        end;
-        //Add RS weathers to all regions supported by real shelter
-        if bWillUpdateRegions then 
-        begin
-          if bUsingSkyrimWeathers or not(Pos('00',HexFormID(new_override)) = 1) then begin
-            AddToRegions(RSPFile,FormID(new_record), HexFormID(new_override), Name(new_record), regionWTHRCount);
-            AddMessage('--Added ' + Name(new_record) +' To All Appropriate Regions');
-          end else begin
-            AddMessage('---Skipping: This Weather Is Not Used In Any Region');
-          end;
-        end;
-
-         //Will update frostfall's Formlists to recognize Real Shelter's weather.
-        if bWillUpdateFFLists then 
-        begin 
-            if Pos(getLocalHexID(new_override, true), FFCombinedFormIDs) > 0 then begin
-              FFSevereList.Append(HexFormID(new_record));
-            end;
-            if Pos(getLocalHexID(new_override, true), FFVanillaFormIDs) > 0 then begin
-            FFSevereList.Append(HexFormID(new_override));
-            end;
-        end;
-        //creates a constant Global Variable that houses the current weather's wind speed,  
-        //this is used to calculate particle emitter rotation for Frostfall Tents
-        WindSpeed := geev(new_record,'DATA - Data\Wind Speed');
-        gV := wbCopyElementToFile(globalVariable, RSPFile, True, True);
-        seev(gV , 'EDID - Editor ID', 'WS_'+IntToStr(WindSpeed));
-        seev(gV, 'FLTV - Value', WindSpeed);
-        AddMessage('WindSpeed GV: '+Name(gV));
-        
-        //Adding both override and new weather records into stringlists that are used for updating the _weatherlist.ini file
-        AddedIndex := idCurrents.Add(HexFormID(new_override));
-        idRSs.Insert(AddedIndex, HexFormID(new_record));
-        WSStringList.Insert(AddedIndex,HexFormID(gV));
-        localString := getLocalHexID(new_override, true);
-        idToSearch.Append(localString);
-        localString := getLocalHexID(new_record, true);
-        idToAdd.Add(localString);
-        Result := 0;
       end;
+      ovHex := HexFormID(new_override);
+      nrHex := HexFormID(new_record);
+      seev(new_record, 'EDID', ('RSP_' + geev(new_record,'EDID - Editor ID')));
+      seev(new_record, 'DATA\Trans Delta', 4);
+      AddMessage('----  Created: '+Name(new_record));
+      //This tests whether the weather is rain or not
+      //There will be a bool to see if the player wants to turn off wind speed for rain to match RS
+      precipNum := genv(wthrMR,'MNAM - Precipitation Type');
+      
+      //creates a constant Global Variable that houses the current weather's wind speed,  
+      //this is used to calculate particle emitter rotation for Frostfall Tents
+      WindSpeed := geev(new_record,'DATA - Data\Wind Speed');
+      gV := wbCopyElementToFile(globalVariable, RSPFile, True, True);
+      seev(gV , 'EDID - Editor ID', 'WS_'+IntToStr(WindSpeed));
+      seev(gV, 'FLTV - Value', WindSpeed);
+      AddMessage('WindSpeed GV: '+Name(gV));
+      
+      if bWillUseBlankSPG then 
+      begin
+      spg := RecordByFormID(GetFile(wthrMR), precipNum, false);
+      spgType := geev(spg,'DATA\[9]');
+        if spgType = 'Rain' then
+        seev(new_record, 'MNAM', HexFormID(SPGR))
+        else
+        seev(new_record, 'MNAM', HexFormID(SPGS));
+      end
+      else begin
+      seev(new_record, 'MNAM', '0');
+      end;
+      //removes wind variation for snow - allows for more accurate snow direction for Frostfall Tents
+      if bWillRemoveSnowSpread then begin
+        if spgType ='Snow' then begin
+        seev(new_override,'DATA\Wind Direction Range', 0);
+        seev(new_record,'DATA\Wind Direction Range', 0);
+        end;
+      end;
+      //Removes wind speed for rain, rain will only fall vertically
+      if bWillRemoveRainWS then begin
+        if (spgType ='Rain') then begin
+        seev(new_override,'DATA\Wind Speed', 0);
+        seev(new_record,'DATA\Wind Speed', 0); 
+        end;
+      end;
+      //removes the visual effects, like fog and in-your-face snowflakes from weather while under shelter
+      if bWillRemoveVE then 
+      begin
+        seev(new_record,'NNAM', '0');
+      end;
+      //Add RS weathers to all regions supported by real shelter
+      if bWillUpdateRegions then 
+      begin
+        if bUsingSkyrimWeathers or not(Pos('00',ovHex) = 1) then begin
+          AddToRegions(RSPFile,FormID(new_record), ovHex, Name(new_record), regionWTHRCount);
+          AddMessage('--Added ' + Name(new_record) +' To All Appropriate Regions');
+        end else begin
+          AddMessage('---Skipping: This Weather Is Not Used In Any Region');
+        end;
+      end;
+       //Will update frostfall's Formlists to recognize Real Shelter's weather.
+      if bWillUpdateFFLists then 
+      begin 
+        if Pos(getLocalHexID(new_override, true), FFCombinedFormIDs) > 0 then begin
+          FFSevereList.Append(nrHex);
+        end;
+        if Pos(getLocalHexID(new_override, true), FFVanillaFormIDs) > 0 then begin
+          FFSevereList.Append(ovHex);
+        end;
+        AddMessage('--Weather Used In Frostfall''s Severe Weather List!');
+      end;
+      
+      if bWillUpdateMlmList then begin
+        if MLMList.IndexOf(ovHex) <> -1 then begin 
+        MLMList.Append(nrHex);
+        AddMessage('--Weather Used In Minty''s Lightning List!');
+      end;
+      
+        
+      //Adding both override and new weather records into stringlists that are used for updating the _weatherlist.ini file
+      AddedIndex := idCurrents.Add(ovHex);
+      idRSs.Insert(AddedIndex, nrHex);
+      WSStringList.Insert(AddedIndex,HexFormID(gV));
+      localString := getLocalHexID(new_override, true);
+      idToSearch.Append(localString);
+      localString := getLocalHexID(new_record, true);
+      idToAdd.Append(localString);
+      Result := 0;
+      
     end;
 
 procedure GrabFFListsAndAddForms;
@@ -725,6 +745,45 @@ procedure CreateTStringLists();
     FFSevereList.Sorted := false;
   end;
 
+procedure GetFormListIDs(localID: string; sFile: IInterface; var tList: TStringList; bGrabOverride: boolean);
+  var
+  i: integer;
+  fGroup, tForm: IInterface;
+  begin
+    if not Assigned(tList) then tList := TStringList.Create;
+    fGroup := GroupBySignature(sFile, 'FLST');
+    if not Assigned(fGroup) then Exit;
+    for i := 0 to Pred(ElementCount(fGroup)) do begin
+      tForm := ElementByIndex(fGroup, i);
+      if Pos(localID, HexFormID(tForm)) > 0 then Break;
+      tForm := nil;
+    end;
+    if not Assigned(tForm) then Exit;
+    if (OverrideCount(tForm) > 0) and bGrabOverride then begin
+      tForm := MasterOrSelf(tForm);
+      tForm := WinningOverride(tForm);
+    end;
+    tForm := ElementByIp(tForm, 'FormIDs');
+    if not Assigned(tForm) then Exit;
+    for i := 0 to Pred(ElementCount(tForm)) do begin
+      AddMessage('-Adding '+ tList.Add(HexFormID(ElementByIndex(tForm, i))) +' to List');
+    end;
+  end;
+  
+procedure SetFormListIDs(localID: String; sFile: IInterface; var dFile: IInterface; tSList: TStringList);
+  var
+    fileForm: IInterface;
+  begin
+    while length(localID) < 6 do
+      localID := '0'+localID;
+    fileForm := GrabFormByLocalID(localID, sFile);
+    if OverrideCount(MasterOrSelf(fileForm)) > 0 then
+      fileForm := WinningOverride(MasterOrSelf(fileForm));
+    AddRequiredElementMasters(fileForm, dFile, false);
+    fileForm := wbCopyElementToFile(fileForm, dFile,false,true); 
+    slev(fileForm, tsList);
+  end;
+  
 
 function finalize: integer;
   var
@@ -814,7 +873,6 @@ function finalize: integer;
         Exit;
       end;
     end;
-
     CreateTStringLists();
     if bIsBackingUpIni then  
     begin
@@ -832,6 +890,14 @@ function finalize: integer;
       ReserveLocalFormIDs();
       AddMessage(' ');
     end;
+    //Check if mintys lightning will occur- if so then prepare TStringLists
+    AddMessage('AddMlM TStringListCode');
+    if bWillUpdateMlmList then
+    begin
+      //LocalID, File, TStringList
+        GetFormListIDs('000000',FileByIndex(mlmIndex),MLMList,true);
+    end;
+    
     if bWillUpdateRegions then
     begin
       AddMessage(' ');
@@ -917,17 +983,46 @@ function finalize: integer;
         AddMessage('=== Skipping Frostfall/Campfire Modifications ===');
         AddMessage(' ');
       end;
+      
+      if bWillUpdateMlmList then begin
+        AddMessage(' ');
+        AddMessage('=== Minty''s Lightning Modifications ===');
+        SetFormListIDs('0000000', FileByIndex(MLMIndex), RSPFile, MLMList);
+        AddMessage(' ');
+        AddMessage('Add MLM Code');
+      end
+      else  begin
+        AddMessage(' ');
+        AddMessage('=== Skipping Minty''s Lightning Modifications ===');
+        AddMessage(' ');
+        AddMessage('Add MLM Code');
+      end;
+      
+      if bHasWOW and bWillXferWowMesh then begin
+        AddMessage(' ');
+        AddMessage('=== Wonders of Weather Modifications ===');
+        AddMessage(' ');
+        AddMessage('Add WoW Code');
+      end
+      else  begin
+        AddMessage(' ');
+        AddMessage('=== Skipping Wonders of Weather Modifications ===');
+        AddMessage(' ');
+        AddMessage('Add WoW Code');
+      end;
+
 
       fIdToSearch.CommaText := idToSearch.CommaText;
       fIdToAdd.CommaText:= idToAdd.CommaText;
 
       if Assigned(regionData) then regionData.Free;
       //idToAdd.Free;
-      idToSearch.Free;
-      idRSs.Free;
-      idCurrents.Free;
-      WSStringList.Free;
-      FFSevereList.Free;
+      if Assigned(idToSearch) then idToSearch.Free;
+      if Assigned(idRSs) then idRSs.Free;
+      if Assigned(idCurrents) then idCurrents.Free;
+      if Assigned(WSStringList) then WSStringList.Free;
+      if Assigned(FFSevereList) then FFSevereList.Free;
+      if Assigned(MLMList) then MLMList.Free;
     end;
     if (bUpdatingWeatherIni) and (not bUpdatingPlugin) then
     begin
