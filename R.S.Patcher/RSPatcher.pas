@@ -33,21 +33,23 @@ uses RSFunctions;
     SPGR, SPGS : IInterface;
 //These are the stringlists which usually hold formids
     slText, idToAdd, idToSearch, idToRemove, idCurrents, idRSs, FFOWlist, WSStringList, rspMasters : TStringList;
-    regionData, FFSevereList : TStringList;
+    regionData, FFSevereList, MLMList: TStringList;
     regionWTHRCount :TList;
 //Ini-Modification
 //--Holds Directory Info
     directory, eDir, bDir, skyDir: string;
 //--Houses the Actual ini files we want to modify
     iniCtrl, iniCrtlb: TMemIniFile;
-//Specific Mod checks (in order: Real Shelter:Frostfall Tents, Frostfall 2.6, Pure Weather, Climates of Tamriel, Warburg 3d paper world map, Real Shelter Rain Overhaul)
-    bHasRSFF, bHasFF, bHasPW, bHasCoT, bHasWB, bHasRSRO: boolean;
+//Specific Mod checks (in order: Real Shelter:Frostfall Tents, Frostfall 2.6, WondersOfWeather, Climates of Tamriel, Warburg 3d paper world map, Real Shelter Rain Overhaul, Minty's Lightning Mod)
+    bHasRSFF, bHasFF, bHasWOW, bHasCoT, bHasWB, bHasRSRO, bHasMLM: boolean;
 //File Index's that I reference constantly 
-    RSPFIndex, RSFIndex, CoTIndex, PWIndex, FFIndex: integer;
+    RSPFIndex, RSFIndex, CoTIndex, PWIndex, FFIndex, MLMIndex: integer;
 //Real Shelter Modification Bools
-    bWillUpdateRegions, bWillRemoveVE, bWillUseBlankSPG, bWillShelterFXRain, bWillRemoveSnowSpread, bWillRemoveRainWS : boolean;
-//Frostfall Modification Bools
+    bWillUpdateRegions, bWillRemoveVE, bWillUseBlankSPG, bWillShelterFXRain, bWillRemoveSnowSpread, bWillRemoveRainWS, bWillUpdateMlmList, bWillXferWowMesh: boolean;
+//Frostfall Modification Vars
     bWillUpdateFFLists:boolean;
+//Mintys Lightning Vars
+    bWillUpdateMintys: boolean;
 //Misc
     bWillUpdateWarburg, bUsingSkyrimWeathers: boolean;
     bDebugging, bQuitting: boolean;
@@ -143,12 +145,13 @@ function findAllTheFiles: integer;
     bRegMod := false;
     bCorrupt := false;
    
-    bHasPW := false;
+    bHasWOW := false;
     bHasRSFF := false;
     bHasFF := false;
     bHasCot := false;
     bHasWB := false;
     bHasRSRO := false;
+    bHasMLM := false;
     bWillUpdateFFLists := false;
     bWillUpdateWarburg := false;
     bWillUpdateRegions := true;
@@ -156,6 +159,7 @@ function findAllTheFiles: integer;
     bWillUseBlankSPG := false;
     bWillShelterFXRain := false;
     bWillRemoveSnowSpread := false;
+    s1 := Lowercase(s1);
     for a := 0 to (FileCount - 1) do 
     begin
       s1 := GetFileName(FileByIndex(a));
@@ -164,35 +168,40 @@ function findAllTheFiles: integer;
         AddMessage('s= ' + s1 + ' at i '+ IntToStr(a));
       end;
 
-      if (Lowercase(s1) = 'realshelter.esp') then 
+      if (s1 = 'realshelter.esp') then 
       begin
         RSFile := FileByIndex(a);
         RSFIndex := a;
       end
-      else if(Lowercase(s1) = 'rspatch.esp') then 
+      else if(s1 = 'rspatch.esp') then 
       begin
         RSPFile := FileByIndex(a);
         RSPFIndex := a;
       end
-      else if(Lowercase(s1) = 'pureweather.esp') then 
+      else if(s1 = 'wondersofweather.esp') then 
       begin
-        bHasPW := true;
+        bHasWOW := true;
         PWIndex := a;
       end
-      else if(Lowercase(s1) = 'realshelterff.esp') then 
+      else if(s1 = 'realshelterff.esp') then 
       begin
         RSFFFile := FileByIndex(a);
         bHasRSFF := true;
       end
-      else if(Lowercase(s1) = 'chesko_frostfall.esp') then 
+      else if(s1 = 'chesko_frostfall.esp') then 
       begin
         bHasFF := true;
         FFIndex := a;
       end
-      else if(Lowercase(s1) = 'climatesoftamriel.esm') then 
+      else if(s1 = 'climatesoftamriel.esm') then 
       begin
         bHasCoT := true;
         CoTIndex := a;
+      end
+      else if (s1 = 'mintylightningmod.esp') then
+      begin
+        bHasMLM := true;
+        MLMIndex := a;
       end
       else if Pos('3d paper world map',Lowercase(s1))  > 0 then
       begin
@@ -368,14 +377,15 @@ function GatherIniInfo: integer;
       boolList.Add(bHasWeatherList);
       boolList.Add(bHasBackupList);
       boolList.Add(bFreshRSP);
-      boolList.Add(bHasPW);
+      boolList.Add(bHasWOW);
       boolList.Add(bHasRSFF);
       boolList.Add(bHasFF);
       boolList.Add(bHasCot);
       boolList.Add(bHasWB);
       boolList.Add(bHasRSRO);
+      boolList.Add(bHasMLM);
       createResearchBox(Form1,DiagBox,pnl1,rg,btnOk,btnAbort,btnCancel, 
-                          bQuitting, bWillUpdateRegions, bWillUpdateWarburg, bWillUpdateFFLists, bWillRemoveVE,bWillUseBlankSPG,bWillRemoveSnowSpread,bWillRemoveRainWS,
+                          bQuitting, bWillUpdateRegions, bWillUpdateWarburg, bWillUpdateFFLists, bWillRemoveVE,bWillUseBlankSPG,bWillRemoveSnowSpread,bWillRemoveRainWS,bWillUpdateMlmList,bWillXferWowMesh
                           boolList, results);
     if results = mrOk then 
       Result := -1
@@ -814,7 +824,6 @@ function finalize: integer;
         Exit;
       end;
     end;
-
     CreateTStringLists();
     if bIsBackingUpIni then  
     begin
@@ -832,6 +841,13 @@ function finalize: integer;
       ReserveLocalFormIDs();
       AddMessage(' ');
     end;
+    //Check if mintys lightning will occur- if so then prepare TStringLists
+    AddMessage('AddMlM TStringListCode');
+    if bWillUpdateMlmList then
+    begin
+      
+    end;
+    
     if bWillUpdateRegions then
     begin
       AddMessage(' ');
@@ -917,17 +933,45 @@ function finalize: integer;
         AddMessage('=== Skipping Frostfall/Campfire Modifications ===');
         AddMessage(' ');
       end;
+      
+      if bHasMlm and bWillUpdateMlmList then begin
+        AddMessage(' ');
+        AddMessage('=== Minty''s Lightning Modifications ===');
+        AddMessage(' ');
+        AddMessage('Add MLM Code');
+      end
+      else  begin
+        AddMessage(' ');
+        AddMessage('=== Skipping Minty''s Lightning Modifications ===');
+        AddMessage(' ');
+        AddMessage('Add MLM Code');
+      end;
+      
+      if bHasWOW and bWillXferWowMesh then begin
+        AddMessage(' ');
+        AddMessage('=== Wonders of Weather Modifications ===');
+        AddMessage(' ');
+        AddMessage('Add WoW Code');
+      end
+      else  begin
+        AddMessage(' ');
+        AddMessage('=== Skipping Wonders of Weather Modifications ===');
+        AddMessage(' ');
+        AddMessage('Add WoW Code');
+      end;
+
 
       fIdToSearch.CommaText := idToSearch.CommaText;
       fIdToAdd.CommaText:= idToAdd.CommaText;
 
       if Assigned(regionData) then regionData.Free;
       //idToAdd.Free;
-      idToSearch.Free;
-      idRSs.Free;
-      idCurrents.Free;
-      WSStringList.Free;
-      FFSevereList.Free;
+      if Assigned(idToSearch) then idToSearch.Free;
+      if Assigned(idRSs) then idRSs.Free;
+      if Assigned(idCurrents) then idCurrents.Free;
+      if Assigned(WSStringList) then WSStringList.Free;
+      if Assigned(FFSevereList) then FFSevereList.Free;
+      if Assigned(MLMList) then MLMList.Free;
     end;
     if (bUpdatingWeatherIni) and (not bUpdatingPlugin) then
     begin
