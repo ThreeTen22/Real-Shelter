@@ -735,6 +735,31 @@ procedure CreateTStringLists();
     FFSevereList.Sorted := false;
   end;
 
+procedure GetFormListIDs(localID: string; sFile: IInterface; var tList: TStringList; bGrabOverride: boolean);
+  var
+  i: integer;
+  fGroup, tForm: IInterface;
+  begin
+    if not Assigned(tList) then tList := TStringList.Create;
+    fGroup := GroupBySignature(sFile, 'FLST');
+    if not Assigned(fGroup) then Exit;
+    for i := 0 to Pred(ElementCount(fGroup)) do begin
+      tForm := ElementByIndex(fGroup, i);
+      if Pos(localID, HexFormID(tForm)) > 0 then Break;
+      tForm := nil;
+    end;
+    if not Assigned(tForm) then Exit;
+    if (OverrideCount(tForm) > 0) and bGrabOverride then begin
+      tForm := MasterOrSelf(tForm);
+      tForm := WinningOverride(tForm);
+    end;
+    tForm := ElementByIp(tForm, 'FormIDs');
+    if not Assigned(tForm) then Exit;
+    for i := 0 to Pred(ElementCount(tForm)) do begin
+      AddMessage('-Adding '+ tList.Add(HexFormID(ElementByIndex(tForm, i))) +' to List');
+    end;
+  end;
+  
 
 function finalize: integer;
   var
@@ -845,7 +870,8 @@ function finalize: integer;
     AddMessage('AddMlM TStringListCode');
     if bWillUpdateMlmList then
     begin
-      
+      //LocalID, File, TStringList
+        GetFormListIDs('000000',FileByIndex(mlmIndex),MLMList,true);
     end;
     
     if bWillUpdateRegions then
