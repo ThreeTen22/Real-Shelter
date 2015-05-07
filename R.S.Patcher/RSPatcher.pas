@@ -159,10 +159,11 @@ function findAllTheFiles: integer;
     bWillUseBlankSPG := false;
     bWillShelterFXRain := false;
     bWillRemoveSnowSpread := false;
-    s1 := Lowercase(s1);
+    bWillUpdateMlmList := false;
     for a := 0 to (FileCount - 1) do 
     begin
       s1 := GetFileName(FileByIndex(a));
+      s1 := Lowercase(s1);
       if bDebugging then
       begin
         AddMessage('s= ' + s1 + ' at i '+ IntToStr(a));
@@ -385,7 +386,7 @@ function GatherIniInfo: integer;
       boolList.Add(bHasRSRO);
       boolList.Add(bHasMLM);
       createResearchBox(Form1,DiagBox,pnl1,rg,btnOk,btnAbort,btnCancel, 
-                          bQuitting, bWillUpdateRegions, bWillUpdateWarburg, bWillUpdateFFLists, bWillRemoveVE,bWillUseBlankSPG,bWillRemoveSnowSpread,bWillRemoveRainWS,bWillUpdateMlmList,bWillXferWowMesh
+                          bQuitting, bWillUpdateRegions, bWillUpdateWarburg, bWillUpdateFFLists, bWillRemoveVE,bWillUseBlankSPG,bWillRemoveSnowSpread,bWillRemoveRainWS,bWillUpdateMlmList,bWillXferWowMesh,
                           boolList, results);
     if results = mrOk then 
       Result := -1
@@ -607,9 +608,8 @@ function ProcessIt: integer;
         if MLMList.IndexOf(ovHex) <> -1 then begin 
         MLMList.Append(nrHex);
         AddMessage('--Weather Used In Minty''s Lightning List!');
+        end;
       end;
-      
-        
       //Adding both override and new weather records into stringlists that are used for updating the _weatherlist.ini file
       AddedIndex := idCurrents.Add(ovHex);
       idRSs.Insert(AddedIndex, nrHex);
@@ -618,8 +618,7 @@ function ProcessIt: integer;
       idToSearch.Append(localString);
       localString := getLocalHexID(new_record, true);
       idToAdd.Append(localString);
-      Result := 0;
-      
+      Result := 0; 
     end;
 
 procedure GrabFFListsAndAddForms;
@@ -745,44 +744,7 @@ procedure CreateTStringLists();
     FFSevereList.Sorted := false;
   end;
 
-procedure GetFormListIDs(localID: string; sFile: IInterface; var tList: TStringList; bGrabOverride: boolean);
-  var
-  i: integer;
-  fGroup, tForm: IInterface;
-  begin
-    if not Assigned(tList) then tList := TStringList.Create;
-    fGroup := GroupBySignature(sFile, 'FLST');
-    if not Assigned(fGroup) then Exit;
-    for i := 0 to Pred(ElementCount(fGroup)) do begin
-      tForm := ElementByIndex(fGroup, i);
-      if Pos(localID, HexFormID(tForm)) > 0 then Break;
-      tForm := nil;
-    end;
-    if not Assigned(tForm) then Exit;
-    if (OverrideCount(tForm) > 0) and bGrabOverride then begin
-      tForm := MasterOrSelf(tForm);
-      tForm := WinningOverride(tForm);
-    end;
-    tForm := ElementByIp(tForm, 'FormIDs');
-    if not Assigned(tForm) then Exit;
-    for i := 0 to Pred(ElementCount(tForm)) do begin
-      AddMessage('-Adding '+ tList.Add(HexFormID(ElementByIndex(tForm, i))) +' to List');
-    end;
-  end;
-  
-procedure SetFormListIDs(localID: String; sFile: IInterface; var dFile: IInterface; tSList: TStringList);
-  var
-    fileForm: IInterface;
-  begin
-    while length(localID) < 6 do
-      localID := '0'+localID;
-    fileForm := GrabFormByLocalID(localID, sFile);
-    if OverrideCount(MasterOrSelf(fileForm)) > 0 then
-      fileForm := WinningOverride(MasterOrSelf(fileForm));
-    AddRequiredElementMasters(fileForm, dFile, false);
-    fileForm := wbCopyElementToFile(fileForm, dFile,false,true); 
-    slev(fileForm, tsList);
-  end;
+
   
 
 function finalize: integer;
@@ -895,7 +857,8 @@ function finalize: integer;
     if bWillUpdateMlmList then
     begin
       //LocalID, File, TStringList
-        GetFormListIDs('000000',FileByIndex(mlmIndex),MLMList,true);
+        MLMList := TStringList.Create;
+        GetFormListIDs('1D776',FileByIndex(mlmIndex),MLMList,true);
     end;
     
     if bWillUpdateRegions then
@@ -987,11 +950,11 @@ function finalize: integer;
       if bWillUpdateMlmList then begin
         AddMessage(' ');
         AddMessage('=== Minty''s Lightning Modifications ===');
-        SetFormListIDs('0000000', FileByIndex(MLMIndex), RSPFile, MLMList);
+        SetFormListIDs('01D776', FileByIndex(MLMIndex), RSPFile, MLMList);
         AddMessage(' ');
         AddMessage('Add MLM Code');
       end
-      else  begin
+      else begin
         AddMessage(' ');
         AddMessage('=== Skipping Minty''s Lightning Modifications ===');
         AddMessage(' ');

@@ -9,13 +9,54 @@ unit RSFunctions;
 
 uses mteFunctions;
 
-{
-	AddToRegions
-	
-	compares HexIdToCompare to the "Region Data Entries\Region Data Entry\ list of all regions
-	found in the TStringList regionData2
 
-}
+
+procedure GetFormListIDs(localID: string; sFile: IInterface; var tList: TStringList; bGrabOverride: boolean);
+  var
+  i: integer;
+  fGroup, tForm: IInterface;
+  output2 : String;
+  begin
+  	AddMessage('SFileName: '+ GetFileName(sFile));
+    fGroup := GroupBySignature(sFile, 'FLST');
+    //if not Assigned(fGroup) then Exit;
+    AddMessage('FLST Count: '+ IntToStr(Pred(ElementCount(fGroup))));
+    for i := 0 to Pred(ElementCount(fGroup)) do begin
+      tForm := ElementByIndex(fGroup, i);
+      AddMessage('HexIDs: '+ HexFormID(tForm));
+      if Pos(localID, HexFormID(tForm)) > 0 then Break;
+      tForm := nil;
+    end;
+   // if not Assigned(tForm) then Exit;
+    if (OverrideCount(tForm) > 0) and bGrabOverride then begin
+      tForm := MasterOrSelf(tForm);
+      tForm := WinningOverride(tForm);
+    end;
+    tForm := ElementByIp(tForm, 'FormIDs');
+    //if not Assigned(tForm) then Exit;
+    for i := 0 to Pred(ElementCount(tForm)) do begin
+      output2 := geev(tForm, '['+IntToStr(i)+']');
+      output2 := CopyFromTo(output2, length(output2)-8,length(output2)-1);
+      tList.Append(output2);
+      AddMessage('-Adding '+output2+' to List');
+    end;
+  end;
+
+
+procedure SetFormListIDs(localID: String; sFile: IInterface; var dFile: IInterface; tSList: TStringList);
+  var
+    fileForm: IInterface;
+  begin
+  	AddMessage('tsList: '+ tSList.CommaText);
+    while length(localID) < 6 do
+      localID := '0'+localID;
+    fileForm := GrabFormByLocalID(localID, sFile);
+    if OverrideCount(MasterOrSelf(fileForm)) > 0 then
+      fileForm := WinningOverride(MasterOrSelf(fileForm));
+    AddRequiredElementMasters(fileForm, dFile, false);
+    fileForm := wbCopyElementToFile(fileForm, dFile,false,true); 
+    slev(fileForm, 'FormIDs', tsList);
+  end;
 
 procedure cleanGRUP(iiFile: IInterface; sGRUP, sMessage: string);
   var
@@ -319,9 +360,9 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
 	var
 		bCorrupt,bRegMod,bHasWeatherList,bHasBackupList,bFreshRSP,bHasFF,bHasRSFF,bHasWOW,bHasCot,bHasWB,bHasRSRO,bHasMLM : Boolean;
 		i : Integer;
-		ffOutline, rsOutline, ffRSOutline, miscOutline, rsroOutline: TGroupBox;
-		ff, ff2,rs,rs2, rs3, wb, rsro: TCheckBox;
-		ffLabel, ff2Label,rsLabel,rs2Label, rs3Label, wbLabel,rsroLabel: TLabel;
+		ffOutline, rsOutline, ffRSOutline, miscOutline, rsroOutline, mlmOutline: TGroupBox;
+		ff, ff2,rs,rs2, rs3, wb, rsro, mlm: TCheckBox;
+		ffLabel, ff2Label,rsLabel,rs2Label, rs3Label, wbLabel,rsroLabel, mlmLabel: TLabel;
 		
 	begin
 	 	i := 0;
@@ -346,7 +387,7 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
 		bHasWB := boolList[i];
 		Inc(i);
 		bHasRSRO := boolList[i];
-		Inc(i)
+		Inc(i);
 		bHasMLM := boolList[i];
 
 
@@ -356,7 +397,7 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
 		Form1.Caption := 'R.S.Patcher 1.5';
 		Form1.ClientHeight := 600;
 		Form1.ClientWidth := 875;
-		if bHasWB or bHasRSRO then
+		if bHasWB or bHasRSRO or bHasMLM then
 		Form1.ClientWidth := 1240;
 		
 
@@ -446,7 +487,15 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
 	    miscOutline.Width := rg.Width/2 - 10;
 	    miscOutline.Left :=  rsOutline.Left + rsOutline.Width + 5;
 	    miscOutline.Top := rsroOutline.Height + rsroOutline.Top + 10;
-	    miscOutline.Caption := 'Misc Mod Options';	    
+	    miscOutline.Caption := 'Warburg Mod Options';
+
+	    mlmOutline := TGroupBox.Create(Form1);
+	    mlmOutline.Parent := rg;
+	    mlmOutline.Height := 110;
+	    mlmOutline.Width := rg.Width/2 - 10;
+	    mlmOutline.Left :=  miscOutline.Left;
+	    mlmOutline.Top := miscOutline.Top+miscOutline.Height + 10;
+	    mlmOutline.Caption := 'Misty''s Lightning Options';
 
 	    ff := TCheckBox.Create(Form1);
     	ff.Parent := ffOutline;
@@ -463,7 +512,7 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
     	ff2 := ConstructCheckBox(Form1, ffRSOutline,ff.Top, ff.Left, ff.Width, 'Remove Snow Spread:', cbUnchecked);
     	ff2Label := ConstructLabel(Form1, ffRSOutline, ff2.Top+20, ff2.Left+30, 20, 500, 'Select this to remove the directional randomness'#13'for snowy weathers.  This will exponentially improve'#13'the directional accuracy of the snow emitters.'#13'The downside is more predictable wind directions.');
 
-    	rs := ConstructCheckBox(Form1, rsOutline, 20,20,rsOutline.Width-30,'Allow Regional Overrides', cbChecked);
+    	rs := ConstructCheckBox(Form1, rsOutline, 20,20,rsOutline.Width-30,'Create Regional Overrides', cbChecked);
     	rsLabel := ConstructLabel(Form1, rsOutline, rs.Top+20, rs.Left+30, 20, 500,'These overwrites are necessary in order to have'#13'weather changes while under shelter.  This is not a'#13'requirement, but if you decide not to then the same '#13'weather will persist indefinitely while under shelter.'#13'These changes DO NOT affect the actual weather');
 
     	rs2 := ConstructCheckBox(Form1, rsOutline, rsLabel.Top + 80, rs.Left, rs.Width,'Remove Sheltered Weather Visual Effects', cbUnchecked);
@@ -477,6 +526,9 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
 
     	wb := ConstructCheckBox(Form1, miscOutline, 20,20,miscOutline.Width-30,'Apply Warburg Fix', cbUnchecked);
     	wbLabel := ConstructLabel(Form1, miscOutline, wb.Top+20, wb.Left+30, 20, 500,'Select this to apply a semi-permanent fix for warburgs'#13'For More Information, please read the info on the left'#13'under the Warnings tab');
+
+    	mlm := ConstructCheckBox(Form1, mlmOutline, 20, 20, mlmOutline.width-30, 'Add Sheltered Weather To Misty''s FormLists', cbUnchecked);
+    	mlmLabel := ConstructLabel(Form1, mlmOutline, mlm.Top+20, mlm.Left+30, 50, 0,'By selecting this, Misty''s Lightning will be able to recognize'#13'sheltered weather, and spawn lightning while under shelter');
 
     	if not bHasRSRO then begin
  			rsro.Enabled := false;
@@ -502,10 +554,20 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
 			ff.State := cbUnchecked;
     	end;
 
+    	if not bHasMLM then begin
+    		mlm.Enabled := false;
+    		mlmLabel.Enabled := false;
+    		mlm.State := cbUnchecked;
+    	end else mlm.State := cbChecked;
+
     	if not bUpdatingPlugin then begin
     		ff.Enabled := false;
     		ffLabel.Enabled := false;
     		ff.State := cbUnchecked;
+
+    		ff2.Enabled := false;
+			ff2Label.Enabled := false;
+			ff2.State := cbUnchecked;
 
     		rs.Enabled := false;
     		rsLabel.Enabled := false;
@@ -519,9 +581,17 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
     		rs3Label.Enabled := false;
     		rs3.State := cbUnchecked;
 
+    		rsro.Enabled := false;
+			rsroLabel.Enabled := false;
+			rsro.State := cbUnchecked;  
+
     		wb.Enabled := false;
     		wbLabel.Enabled := false;
     		wb.State := cbUnchecked;
+
+    		mlm.Enabled := false;
+    		mlmLabel.Enabled := false;
+    		mlm.State := cbUnchecked;
     	end;
     	
 
@@ -686,7 +756,7 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
 		DiagBox.Lines.Add('Q. I have a more up to date MteFunctions.pas? Which version do I use?');
 		DiagBox.Lines.Add('Use the up to date version');
 		DiagBox.Lines.Add(' ');
-		DiagBox.Lines.Add('Q. Can I merge real shelter and RSPatch?');
+		DiagBox.Lines.Add('Q. Can I merge real shelter and RSPatch or merge any other weather mod?');
 		DiagBox.Lines.Add('No.');
 		DiagBox.Lines.Add(' ');
 
@@ -723,6 +793,10 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
     		if not wb.Enabled then 
     		bWillUpdateWarburg := false;
     	end;
+
+
+    	if mlm.State = cbChecked then bWillUpdateMlmList := true;
+
 	end; 
 
 	//THIS IS FOUND IN THE "CHECK FOR ERRORS" SCRIPT FOUND IN THE -EDIT SCRIPTS- FOLDER
@@ -836,16 +910,11 @@ procedure ConstructOkCancelButtons(h: TObject; p: TObject; top: Integer);
 	end;
 //Ported over from mteFunctions to support 3.1.0 and shorted for easier version comparison
 function GetVersionStringRS(v: integer): string;
-	var 
-	v1,v2,v3: integer;
 	begin
-  	  v1 := v;
-  	  v2 := v;
-  	  v3 := v;
   	  Result := Format('%d.%d.%d', [
-  	    v1 shr 24,
-  	    v2 shr 16 and $FF,
-  	    v3 shr 8 and $FF
+  	    Int(v) shr 24,
+  	    Int(v) shr 16 and $FF,
+  	    Int(v) shr 8 and $FF
   	  ]);
 	end;
 
