@@ -45,10 +45,10 @@ uses RSFunctions;
 //File Index's that I reference constantly 
     RSPFIndex, RSFIndex, CoTIndex, PWIndex, FFIndex, MLMIndex: integer;
 //Real Shelter Modification Bools
-    bWillUpdateRegions, bWillRemoveVE, bWillUseBlankSPG, bWillShelterFXRain, bWillRemoveSnowSpread, bWillRemoveRainWS, bWillUpdateMlmList, bWillXferWowMesh: boolean;
-//Frostfall Modification Vars
+    bWillUpdateRegions, bWillRemoveVE, bWillUseBlankSPG, bWillRemoveSnowSpread, bWillRemoveRainWS, bWillUpdateMlmList, bWillTurnOffSplashes: boolean;
+//Frostfall Modification Bools
     bWillUpdateFFLists:boolean;
-//Mintys Lightning Vars
+//Mintys Lightning Bools
     bWillUpdateMintys: boolean;
 //Misc
     bWillUpdateWarburg, bUsingSkyrimWeathers: boolean;
@@ -56,6 +56,26 @@ uses RSFunctions;
     trueCheck,  falseCheck, bRegMod, bCorrupt: boolean;
     
 
+procedure SetGlobals();
+begin
+    bRegMod := false;
+    bCorrupt := false;
+    bHasWOW := false;
+    bHasRSFF := false;
+    bHasFF := false;
+    bHasCot := false;
+    bHasWB := false;
+    bHasRSRO := false;
+    bHasMLM := false;
+    bWillUpdateFFLists := false;
+    bWillUpdateWarburg := false;
+    bWillUpdateRegions := true;
+    bWillRemoveVE := false;
+    bWillUseBlankSPG := false;
+    bWillTurnOffSplashes := false;
+    bWillRemoveSnowSpread := false;
+    bWillUpdateMlmList := false;
+end;
 
 // NOT A GLOBAL FUNCTION!
 function GrabAllTextInfoAndSearch(splitSections:Boolean):  TStringList;
@@ -142,24 +162,6 @@ function findAllTheFiles: integer;
   begin
     // Find Files
     CoTIndex := 0;
-    bRegMod := false;
-    bCorrupt := false;
-   
-    bHasWOW := false;
-    bHasRSFF := false;
-    bHasFF := false;
-    bHasCot := false;
-    bHasWB := false;
-    bHasRSRO := false;
-    bHasMLM := false;
-    bWillUpdateFFLists := false;
-    bWillUpdateWarburg := false;
-    bWillUpdateRegions := true;
-    bWillRemoveVE := false;
-    bWillUseBlankSPG := false;
-    bWillShelterFXRain := false;
-    bWillRemoveSnowSpread := false;
-    bWillUpdateMlmList := false;
     for a := 0 to (FileCount - 1) do 
     begin
       s1 := GetFileName(FileByIndex(a));
@@ -282,8 +284,8 @@ function CleanPatch(checkGrp:IInterface; bCleanup:integer): boolean;
       cleanGRUP(checkGrp, 'WTHR','=== Removing Weathers ===');
       cleanGRUP(checkGrp, 'GLOB','=== Removing GlobalVariables ===');
       cleanGRUP(checkGrp, 'REGN','=== Removing Regions ===');
-      
-
+      cleanGRUP(checkGrp, 'MSTT','=== Removing Movable Statics ===');
+    
       tempList1 := MasterOrSelf(RSPList);
       tempList2 := MasterOrSelf(CurrentList);
       tempList3 := MasterOrSelf(WSList);
@@ -386,7 +388,7 @@ function GatherIniInfo: integer;
       boolList.Add(bHasRSRO);
       boolList.Add(bHasMLM);
       createResearchBox(Form1,DiagBox,pnl1,rg,btnOk,btnAbort,btnCancel, 
-                          bQuitting, bWillUpdateRegions, bWillUpdateWarburg, bWillUpdateFFLists, bWillRemoveVE,bWillUseBlankSPG,bWillRemoveSnowSpread,bWillRemoveRainWS,bWillUpdateMlmList,bWillXferWowMesh,
+                          bQuitting, bWillUpdateRegions, bWillUpdateWarburg, bWillUpdateFFLists, bWillRemoveVE,bWillUseBlankSPG,bWillRemoveSnowSpread,bWillRemoveRainWS,bWillUpdateMlmList,bWillTurnOffSplashes,
                           boolList, results);
     if results = mrOk then 
       Result := -1
@@ -635,7 +637,7 @@ procedure GrabFFListsAndAddForms;
           AddRequiredElementMasters(FFFList, RSPFile, false);
           FFFListOverride := wbCopyElementToFile(FFFList, RSPFile, false, true);
           Slev(FFFListOverride, 'FormIDs',FFSevereList);
-          AddMessage('----  Complete');
+          AddMessage('-- Modifications Complete');
       end;
 
 procedure AddPatchedWeathersToStringLists(var fIdToAdd: TStringList; var fIdToSearch: TStringList);
@@ -781,6 +783,7 @@ function finalize: integer;
     end;
     RemoveFilter();
     AddMessage('=== Gathering ModList Information === ');
+    SetGlobals();
     findAllTheFiles;
 
     if not Assigned(RSFile) or not Assigned(RSPFile) then 
@@ -938,40 +941,33 @@ function finalize: integer;
       if bHasFF and bWillUpdateFFLists then begin
         AddMessage(' ');
         AddMessage('=== Frostfall/Campfire Modifications ===');
-        AddMessage(' ');
         GrabFFListsAndAddForms;
       end
       else  begin
         AddMessage(' ');
         AddMessage('=== Skipping Frostfall/Campfire Modifications ===');
-        AddMessage(' ');
       end;
       
       if bWillUpdateMlmList then begin
         AddMessage(' ');
         AddMessage('=== Minty''s Lightning Modifications ===');
-        SetFormListIDs('01D776', FileByIndex(MLMIndex), RSPFile, MLMList);
-        AddMessage(' ');
-        AddMessage('Add MLM Code');
+        SetFormListIDs('01D776', FileByIndex(MLMIndex), RSPFile, MLMList);;
+        AddMessage('-- Modifications Complete')
       end
       else begin
         AddMessage(' ');
         AddMessage('=== Skipping Minty''s Lightning Modifications ===');
-        AddMessage(' ');
-        AddMessage('Add MLM Code');
       end;
       
-      if bHasWOW and bWillXferWowMesh then begin
+      if bWillTurnOffSplashes then begin
         AddMessage(' ');
         AddMessage('=== Wonders of Weather Modifications ===');
-        AddMessage(' ');
-        AddMessage('Add WoW Code');
+        ChangeModelPath('055486',' ', RSFile, RSPFile);
+        AddMessage('-- Modifications Complete');
       end
       else  begin
         AddMessage(' ');
         AddMessage('=== Skipping Wonders of Weather Modifications ===');
-        AddMessage(' ');
-        AddMessage('Add WoW Code');
       end;
 
 

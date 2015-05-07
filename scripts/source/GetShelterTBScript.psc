@@ -88,6 +88,7 @@ Event OnTriggerEnter(ObjectReference akActionRef)
       EndIf
       If RS_IsSheltered.GetValue() <= 1 
         ActivateSoundFX()
+        UpdateFormLists()
       EndIf
       if infWTHR == false
       RegisterForModEvent("RS_DisableSnowEvent","RS_StopChecking")
@@ -102,7 +103,6 @@ EndEvent
 Event OnTrigger(ObjectReference akActionRef)
   If akActionRef == PlayerREF
     ;GotoState("Busy2")
-    Utility.Wait(0.1)
     if happened == 0 
       RS_TimeUnderShelter.Mod(1.0)
       RS_IsSheltered.SetValue(1.0) 
@@ -155,7 +155,6 @@ Function DisableFX(ObjectReference fx, bool noWait = true)
 EndFunction
 
 int Function SetLocalVar()
-    
     CurrentWeather = Weather.GetCurrentWeather()
     wthrClassification = CurrentWeather.GetClassification()
     happened = 0
@@ -164,7 +163,7 @@ int Function SetLocalVar()
       Notification("Inside of SetLocalVar")
       Trace(self + "Inside of SetLocalVar")
     EndIf
-
+    RS_TimeUnderShelter.SetValue(0.0)
     if RS_HasRegions.GetValue() == 0
       infWTHR = true
     EndIf
@@ -191,47 +190,59 @@ EndFunction
 
 Function ActivateSoundFX()
   Form rsWeatherForm
-  Weather tempM = Weather.GetCurrentWeather()
-  Form tempW = tempM as Form
-  int wClass = tempM.GetClassification()
+  Form tempW = CurrentWeather as Form
   float soundVol = RS_RainSoundVolume.GetValue()
   float fluidTrans = RS_FluidTransitions.GetValue() 
 
   rsWTHRIndx = RS_Index.GetValue() As Int
  ; Notification("RSWTHRINDEX: " + rsWTHRIndx)
   RS_TimeUnderShelter.SetValue(0.0)
-  ;Notification("Inside Activate: rsWTHRIndx" + rsWTHRIndx)
-  If (tempW != RS_CurrentList.GetAt(rsWTHRIndx))
-    rsWTHRIndx = RS_CurrentList.Find(tempW)
-    ;Notification("After Activate: rsWTHRIndx" + rsWTHRIndx)
-  EndIf
+  rsWTHRIndx = RS_CurrentList.Find(tempW)
   Utility.Wait(0.1)
-  if rsWTHRIndx != -1
-     RS_IsSheltered.SetValue(1)
-     rsWeatherForm = RS_RSList.GetAt(rsWTHRIndx) 
-     RSWeather = rsWeatherForm as Weather
-     If (fluidTrans != 0.0)
-      RSWeather.SetActive(infWTHR,true)
-     Else
-      RSWeather.ForceActive(infWTHR)
-     EndIf
-  Else
+  If rsWTHRIndx == -1
     rsWTHRIndx = RS_RSList.Find(tempW)
-  EndIf
-  If (rsWTHRIndx != -1)
-   RS_Index.SetValue(rsWTHRIndx)
-   EnableAll()
-    If (wClass == 2)
-    soundInstance = rainSound.Play(rainsoundfx1)
-    Sound.SetInstanceVolume(soundInstance, soundVol) 
-    ElseIF (wClass == 3)
-    soundInstance = snowSound.Play(rainsoundfx1)
-    Sound.SetInstanceVolume(soundInstance, soundVol) 
+  EndIF
+
+  If rsWTHRIndx != -1
+    RS_IsSheltered.SetValue(1)
+    rsWeatherForm = RS_RSList.GetAt(rsWTHRIndx) 
+    RSWeather = rsWeatherForm as Weather
+    If (fluidTrans != 0.0)
+      RSWeather.SetActive(infWTHR,true)
+    Else
+      RSWeather.ForceActive(infWTHR)
+    EndIf
+    Utility.Wait(0.1)
+    EnableAll()
+    If (wthrClassification == 2)
+      soundInstance = rainSound.Play(rainsoundfx1)
+      Sound.SetInstanceVolume(soundInstance, soundVol) 
+    ElseIF (wthrClassification == 3)
+      soundInstance = snowSound.Play(rainsoundfx1)
+      Sound.SetInstanceVolume(soundInstance, soundVol) 
     EndIf
   EndIf
 EndFunction 
 
-
+Function UpdateFormLists()
+  Form curList
+  Form rssList
+  Form wsList
+  If rsWTHRIndx > 4
+    curList = RS_CurrentList.GetAt(rsWTHRIndx)
+    rssList = RS_RSList.GetAt(rsWTHRIndx)
+    wsList = RS_WSList.GetAt(rsWTHRIndx)
+    RS_CurrentList.AddForm(curList)
+    RS_RSList.AddForm(rssList)
+    RS_WSList.AddForm(wsList)
+    RS_Index.SetValue(0.0)
+    curList = none
+    rssList = none
+    wsList = none
+  ElseIf rsWTHRIndx != -1
+    RS_Index.SetValue(rsWTHRIndx as float)
+  EndIf
+EndFunction
 
 Function EnableAll()
   if rainsoundfx1
@@ -260,3 +271,35 @@ FormList Property RSList Auto hidden
 GlobalVariable Property IsSheltered Auto hidden
 GlobalVariable Property ShelterSwitch Auto hidden
 GlobalVariable Property flist Auto hidden
+
+ ;Notification("Inside Activate: rsWTHRIndx" + rsWTHRIndx)
+  {
+  If (tempW != RS_CurrentList.GetAt(rsWTHRIndx))
+    rsWTHRIndx = RS_CurrentList.Find(tempW)
+    ;Notification("After Activate: rsWTHRIndx" + rsWTHRIndx)
+  EndIf
+  Utility.Wait(0.1)
+  if rsWTHRIndx != -1
+     RS_IsSheltered.SetValue(1)
+     rsWeatherForm = RS_RSList.GetAt(rsWTHRIndx) 
+     RSWeather = rsWeatherForm as Weather
+     If (fluidTrans != 0.0)
+      RSWeather.SetActive(infWTHR,true)
+     Else
+      RSWeather.ForceActive(infWTHR)
+     EndIf
+  Else
+    rsWTHRIndx = RS_RSList.Find(tempW)
+  EndIf
+  If (rsWTHRIndx != -1)
+   RS_Index.SetValue(rsWTHRIndx)
+   EnableAll()
+    If (wClass == 2)
+    soundInstance = rainSound.Play(rainsoundfx1)
+    Sound.SetInstanceVolume(soundInstance, soundVol) 
+    ElseIF (wClass == 3)
+    soundInstance = snowSound.Play(rainsoundfx1)
+    Sound.SetInstanceVolume(soundInstance, soundVol) 
+    EndIf
+  EndIf
+  }

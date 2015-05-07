@@ -10,6 +10,18 @@ unit RSFunctions;
 uses mteFunctions;
 
 
+procedure ChangeModelPath(localID, newPath: string; sFile,dFile: IInterface);
+var
+	tRecord: IInterface;
+begin
+	tRecord := GrabFormByLocalID(localID, sFile);
+	if Assigned(dFile) then begin
+		AddRequiredElementMasters(tRecord, dFile, false);
+		tRecord := wbCopyElementToFile(tRecord, dFile, false, true);
+	end;
+	seev(tRecord, 'Model\MODL', newPath);
+end;
+
 
 procedure GetFormListIDs(localID: string; sFile: IInterface; var tList: TStringList; bGrabOverride: boolean);
   var
@@ -27,13 +39,13 @@ procedure GetFormListIDs(localID: string; sFile: IInterface; var tList: TStringL
       if Pos(localID, HexFormID(tForm)) > 0 then Break;
       tForm := nil;
     end;
-   // if not Assigned(tForm) then Exit;
+   	if not Assigned(tForm) then Exit;
     if (OverrideCount(tForm) > 0) and bGrabOverride then begin
       tForm := MasterOrSelf(tForm);
       tForm := WinningOverride(tForm);
     end;
     tForm := ElementByIp(tForm, 'FormIDs');
-    //if not Assigned(tForm) then Exit;
+    if not Assigned(tForm) then Exit;
     for i := 0 to Pred(ElementCount(tForm)) do begin
       output2 := geev(tForm, '['+IntToStr(i)+']');
       output2 := CopyFromTo(output2, length(output2)-8,length(output2)-1);
@@ -352,7 +364,7 @@ procedure createOverrideBox(var frm: TObject;var rg: TObject;var pnl: TObject;va
 
 // NOT A GLOBAL FUNCTION!
 procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObject;var rg:TGroupBox;var btnOk: TButton;var btnAbort: TButton;var btnCancel: TButton; var bQuitting: Boolean;
-			    var bWillUpdateRegions:boolean;var bWillUpdateWarburg:boolean; var bWillUpdateFFLists:boolean; var bWillRemoveVE:boolean;var bWillUseBlankSPG:boolean;var bWillRemoveSnowSpread:boolean;var bWillRemoveRainWS:boolean;var bWillUpdateMlmList:boolean;var bWillXferWoWMesh:boolean;
+			    var bWillUpdateRegions:boolean;var bWillUpdateWarburg:boolean; var bWillUpdateFFLists:boolean; var bWillRemoveVE:boolean;var bWillUseBlankSPG:boolean;var bWillRemoveSnowSpread:boolean;var bWillRemoveRainWS:boolean;var bWillUpdateMlmList:boolean;var bWillTurnOffSplashes:boolean;
 			    var boolList: TList; var results: TModalResult);
 
 	//bCorrupt,bRegMod,bHasWeatherList,bHasBackupList,bFreshRSP: boolean;
@@ -360,9 +372,9 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
 	var
 		bCorrupt,bRegMod,bHasWeatherList,bHasBackupList,bFreshRSP,bHasFF,bHasRSFF,bHasWOW,bHasCot,bHasWB,bHasRSRO,bHasMLM : Boolean;
 		i : Integer;
-		ffOutline, rsOutline, ffRSOutline, miscOutline, rsroOutline, mlmOutline: TGroupBox;
-		ff, ff2,rs,rs2, rs3, wb, rsro, mlm: TCheckBox;
-		ffLabel, ff2Label,rsLabel,rs2Label, rs3Label, wbLabel,rsroLabel, mlmLabel: TLabel;
+		ffOutline, rsOutline, ffRSOutline, miscOutline, rsroOutline, mlmOutline, visOutline: TGroupBox;
+		ff, ff2,rs,rs2, rs3, wb, rsro, mlm, spl: TCheckBox;
+		ffLabel, ff2Label,rsLabel,rs2Label, rs3Label, wbLabel,rsroLabel, mlmLabel, splLabel: TLabel;
 		
 	begin
 	 	i := 0;
@@ -396,8 +408,6 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
 		Form1.Position := poScreenCenter;
 		Form1.Caption := 'R.S.Patcher 1.5';
 		Form1.ClientHeight := 600;
-		Form1.ClientWidth := 875;
-		if bHasWB or bHasRSRO or bHasMLM then
 		Form1.ClientWidth := 1240;
 		
 
@@ -451,65 +461,60 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
 
 	    rsOutline := TGroupBox.Create(Form1);
 	    rsOutline.Parent := rg;
-	    rsOutline.Height := 324;
+	    rsOutline.Height := 374;
 	    rsOutline.Width := rg.Width/2 - 10;
 	    rsOutline.Left :=  7;
 	    rsOutline.Top := 10;
 	    rsOutline.Caption := 'Real Shelter Options';
 
-	    ffOutline := TGroupBox.Create(Form1);
-	    ffOutline.Parent := rg;
-	    ffOutline.Height := 80;
-	    ffOutline.Width := rsOutline.Width;
-	    ffOutline.Left :=  rsOutline.Left;
-	    ffOutline.Top := rsOutline.Height +rsOutline.Top + 10;
-	    ffOutline.Caption := 'Frostfall Options';
 
-	    ffRSOutline := TGroupBox.Create(Form1);
-	    ffRSOutline.Parent := rg;
-	    ffRSOutline.Height := 110;
-	    ffRSOutline.Width := ffOutline.Width;
-	    ffRSOutline.Left :=  ffOutline.Left;
-	    ffRSOutline.Top := ffOutline.Height +ffOutline.Top + 10;
-	    ffRSOutline.Caption := 'Real Shelter: Frostfall Tents Options';
+	   	ffOutline := TGroupBox.Create(Form1);
+	   	ffOutline.Parent := rg;
+	   	ffOutline.Height := 100;
+	   	ffOutline.Width := rg.Width/2 - 10;
+	   	ffOutline.Left :=  rsOutline.Left+rsOutline.Width + 5;
+	   	ffOutline.Top := rsOutline.Top;
+	   	ffOutline.Caption := 'Frostfall Options';	
 
-	   	rsroOutline := TGroupBox.Create(Form1);
-	   	rsroOutline.Parent := rg;
-	   	rsroOutline.Height := 130;
-	   	rsroOutline.Width := rg.Width/2 - 10;
-	   	rsroOutline.Left :=  rsOutline.Left+rsOutline.Width + 5;
-	   	rsroOutline.Top := rsOutline.Top;
-	   	rsroOutline.Caption := 'Real Shelter Rain Overhaul Options';	  
+	    rsroOutline := TGroupBox.Create(Form1);
+	    rsroOutline.Parent := rg;
+	    rsroOutline.Height := 144;
+	    rsroOutline.Width := rsOutline.Width;
+	    rsroOutline.Left :=  rsOutline.Left;
+	    rsroOutline.Top := rsOutline.Height +rsOutline.Top + 10;
+	    rsroOutline.Caption := 'Real Shelter Rain Overhaul Options';
 
-	    miscOutline := TGroupBox.Create(Form1);
-	    miscOutline.Parent := rg;
-	    miscOutline.Height := 110;
-	    miscOutline.Width := rg.Width/2 - 10;
-	    miscOutline.Left :=  rsOutline.Left + rsOutline.Width + 5;
-	    miscOutline.Top := rsroOutline.Height + rsroOutline.Top + 10;
-	    miscOutline.Caption := 'Warburg Mod Options';
+	   	ffRSOutline := TGroupBox.Create(Form1);
+	   	ffRSOutline.Parent := rg;
+	   	ffRSOutline.Height := 100;
+	   	ffRSOutline.Width := ffOutline.Width;
+	   	ffRSOutline.Left :=  ffOutline.Left;
+	   	ffRSOutline.Top := ffOutline.Top + ffOutline.Height + 10;
+	   	ffRSOutline.Caption := 'Real Shelter: Frostfall Tents';	  
 
 	    mlmOutline := TGroupBox.Create(Form1);
 	    mlmOutline.Parent := rg;
-	    mlmOutline.Height := 110;
+	    mlmOutline.Height := 100;
 	    mlmOutline.Width := rg.Width/2 - 10;
-	    mlmOutline.Left :=  miscOutline.Left;
-	    mlmOutline.Top := miscOutline.Top+miscOutline.Height + 10;
+	    mlmOutline.Left :=  ffOutline.Left;
+	    mlmOutline.Top := ffRSOutline.Top+FFRSOutline.Height + 10;
 	    mlmOutline.Caption := 'Misty''s Lightning Options';
 
-	    ff := TCheckBox.Create(Form1);
-    	ff.Parent := ffOutline;
-    	ff.Top := 20;
-    	ff.Left := 20;
-    	ff.Width := ffOutline.Width - 30;
-    	ff.Caption := 'Add Sheltered Weathers To Frostfall FormLists. ';
-    	ff.State := cbChecked;
+
+	    miscOutline := TGroupBox.Create(Form1);
+	    miscOutline.Parent := rg;
+	    miscOutline.Height := 100;
+	    miscOutline.Width := rg.Width/2 - 10;
+	    miscOutline.Left :=  ffOutline.Left;
+	    miscOutline.Top := mlmOutline.Top + mlmOutline.Height + 10;
+	    miscOutline.Caption := 'Warburg Mod Options';
 
 
+    	ff := ConstructCheckbox(Form1, ffOutline, 20, 20, ffOutline.Width - 30, 'Add Sheltered Weathers To Frostfall FormLists. ', cbChecked);
     	//NOTE:  These ConstructLabel and ConstructCheckBox are using mator's old function,  it is not using the one provided by the current mteFunctins.pas
-    	ffLabel := ConstructLabel(Form1, ffOutline, ff.Top+20, ff.Left+30, 50, 0,'By selecting this, frostfall will be able to recognize'#13'sheltered weather, and act accordingly');
+    	ffLabel := ConstructLabel(Form1, ffOutline, ff.Top+20, ff.Left+30, 50, 0,'By selecting this, frostfall will be able to recognize'#13'sheltered weather, and therefore remove the extra'#13'survivability bonus when staying under shelter during a'#13'severe storm.');
 
-    	ff2 := ConstructCheckBox(Form1, ffRSOutline,ff.Top, ff.Left, ff.Width, 'Remove Snow Spread:', cbUnchecked);
+    	ff2 := ConstructCheckBox(Form1, ffRSOutline,ff.Top, ff.Left, ff.Width, 'Remove Snow Spread', cbUnchecked);
     	ff2Label := ConstructLabel(Form1, ffRSOutline, ff2.Top+20, ff2.Left+30, 20, 500, 'Select this to remove the directional randomness'#13'for snowy weathers.  This will exponentially improve'#13'the directional accuracy of the snow emitters.'#13'The downside is more predictable wind directions.');
 
     	rs := ConstructCheckBox(Form1, rsOutline, 20,20,rsOutline.Width-30,'Create Regional Overrides', cbChecked);
@@ -518,9 +523,12 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
     	rs2 := ConstructCheckBox(Form1, rsOutline, rsLabel.Top + 80, rs.Left, rs.Width,'Remove Sheltered Weather Visual Effects', cbUnchecked);
     	rs2Label := ConstructLabel(Form1, rsOutline, rs2.Top+20, rs2.Left+30, 20, 500,'Select this to also remove weather visual effects'#13'For example: selecting this will remove the fog'#13'from Supreme Storm rains while under shelter');
 
-    	rs3 := ConstructCheckBox(Form1, rsOutline, rs2Label.Top + 60, rs2.Left, rs2.Width,'Use Invisible Precipitation', cbChecked);
+    	rs3 := ConstructCheckBox(Form1, rsOutline, rs2Label.Top + 54, rs2.Left, rs2.Width,'Use Invisible Precipitation', cbChecked);
     	rs3Label := ConstructLabel(Form1, rsOutline, rs3.Top+20, rs3.Left+30, 20, 500,'Select this to have sheltered weather activate invisible'#13'rain or snow rather than removing it'#13''#32'-Enables raindrop animation on large bodies of water'#13''#32'-Certain town and city lights will stay on'#13''#32'-Guards no longer use torches while raining'#13''#32#32'or snowing under shelter');
     	
+    	spl := ConstructCheckBox(Form1, rsOutline, rs3Label.Top + 90, rs3.Left, rs3.Width, 'Remove R.S. Rain Splashes', cbUnchecked);
+    	splLabel := ConstructLabel(Form1, rsOutline, spl.Top+20, spl.Left+30, 20, 500,'By selecting this, R.S. rain splashes will not appear.'#13'This option is meant for World of Weather users, but'#13'anyone can apply this setting.');
+
     	rsro := ConstructCheckBox(Form1, rsroOutline, 20,20, rsroOutline.Width-30,'Reduce Rain Wind Speed', cbUnchecked);
     	rsroLabel := ConstructLabel(Form1, rsroOutline, rsro.Top+20, rsro.Left+30, 20, 500,'This will reduce the angle at which rain travels'#13'By doing so you will find that the difference between the'#13'outside rain and sheltered rain near perfect.'#13'-This will not affect tree swaying'#13'-This will slow down cloud movement a bit'#13'-I only modify the weathers which use my S.P.G.');																		  
 
@@ -529,6 +537,10 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
 
     	mlm := ConstructCheckBox(Form1, mlmOutline, 20, 20, mlmOutline.width-30, 'Add Sheltered Weather To Misty''s FormLists', cbUnchecked);
     	mlmLabel := ConstructLabel(Form1, mlmOutline, mlm.Top+20, mlm.Left+30, 50, 0,'By selecting this, Misty''s Lightning will be able to recognize'#13'sheltered weather, and spawn lightning while under shelter');
+
+    
+
+
 
     	if not bHasRSRO then begin
  			rsro.Enabled := false;
@@ -560,6 +572,10 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
     		mlm.State := cbUnchecked;
     	end else mlm.State := cbChecked;
 
+    	if bHasWOW then begin
+    		spl.State := cbChecked;
+    	end;
+
     	if not bUpdatingPlugin then begin
     		ff.Enabled := false;
     		ffLabel.Enabled := false;
@@ -580,6 +596,10 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
     		rs3.Enabled := false;
     		rs3Label.Enabled := false;
     		rs3.State := cbUnchecked;
+
+    		spl.Enabled := false;
+    		splLabel.Enabled := false;
+    		spl.State := cbUnchecked;
 
     		rsro.Enabled := false;
 			rsroLabel.Enabled := false;
@@ -796,7 +816,7 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
 
 
     	if mlm.State = cbChecked then bWillUpdateMlmList := true;
-
+    	if spl.State = cbChecked then bWillTurnOffSplashes := true;
 	end; 
 
 	//THIS IS FOUND IN THE "CHECK FOR ERRORS" SCRIPT FOUND IN THE -EDIT SCRIPTS- FOLDER

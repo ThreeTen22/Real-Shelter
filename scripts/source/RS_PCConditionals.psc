@@ -108,7 +108,9 @@ Bool Function RainBeamToRain(int index = 0)
 	EndIf
 
 	RS_PrecipStatic.GetAt(5).SetWorldModelPath(worldPath)
-	RS_PrecipStatic.GetAt(6).SetWorldModelPath(floorSplashDefault)
+	If RS_PrecipStatic.GetAt(6).GetWorldModelPath() != " "
+		RS_PrecipStatic.GetAt(6).SetWorldModelPath(floorSplashDefault)
+	EndIf
 	temp2 = none
 	Return true
 EndFunction
