@@ -3,6 +3,9 @@ Remember:  If you have never used Tes5edit before, please install it correctly h
 After installation, run the program at least once (open it up then close out).
 
 NMM Users!
+
+Note:  Chances are you will need to set Tes5edit.exe to run as administrator when patching, otherwise your load order/files will not appear correctly during the patching process.  If you do not know how to set that preference, please follow the directions here: (http://www.nexusmods.com/skyrim/articles/50184/?)
+
 1. Install via Mod Manager
 
 2. Move RSPatch.esp to the very bottom of your load order
@@ -24,6 +27,9 @@ https://dl.dropboxusercontent.com/u/1258152/MasterPlugin%20Selection.png
 
 
 Mod Organizer Users!
+
+Note:  Chances are you will need to set Tes5edit.exe and ModOrganizer.exe to run as administrator when patching, otherwise your load order/files will not appear correctly during the patching process.  If you do not know how to set that preference, please follow the directions here: (http://www.nexusmods.com/skyrim/articles/50184/?)
+
 1. Install via Mod Manager
 
 2. Move RSPatch.esp to the very bottom of your load order

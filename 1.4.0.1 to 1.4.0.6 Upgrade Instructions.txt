@@ -1,7 +1,6 @@
 When Upgrading:  
 NMM Users:
 Please Manually Delete:"Data/Meshes/effects/fxambgentlyfallingsnow00.nif" or Completely Uninstall Real Shelter From NMM Then Reinstall.
-If Using ELFX you may have to reinstall or grab fxambgentlyfallingsnow00.nif from inside their zip file.
 
 
 MO Users:  

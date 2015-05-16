@@ -527,7 +527,7 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
     	rs3Label := ConstructLabel(Form1, rsOutline, rs3.Top+20, rs3.Left+30, 20, 500,'Select this to have sheltered weather activate invisible'#13'rain or snow rather than removing it'#13''#32'-Enables raindrop animation on large bodies of water'#13''#32'-Certain town and city lights will stay on'#13''#32'-Guards no longer use torches while raining'#13''#32#32'or snowing under shelter');
     	
     	spl := ConstructCheckBox(Form1, rsOutline, rs3Label.Top + 90, rs3.Left, rs3.Width, 'Remove R.S. Rain Splashes', cbUnchecked);
-    	splLabel := ConstructLabel(Form1, rsOutline, spl.Top+20, spl.Left+30, 20, 500,'By selecting this, R.S. rain splashes will not appear.'#13'This option is meant for World of Weather users, but'#13'anyone can apply this setting.');
+    	splLabel := ConstructLabel(Form1, rsOutline, spl.Top+20, spl.Left+30, 20, 500,'By selecting this, R.S. rain splashes will not appear.'#13'This option is meant for Wonders of Weather users, but'#13'anyone can apply this setting.');
 
     	rsro := ConstructCheckBox(Form1, rsroOutline, 20,20, rsroOutline.Width-30,'Reduce Rain Wind Speed', cbUnchecked);
     	rsroLabel := ConstructLabel(Form1, rsroOutline, rsro.Top+20, rsro.Left+30, 20, 500,'This will reduce the angle at which rain travels'#13'By doing so you will find that the difference between the'#13'outside rain and sheltered rain near perfect.'#13'-This will not affect tree swaying'#13'-This will slow down cloud movement a bit'#13'-I only modify the weathers which use my S.P.G.');																		  
