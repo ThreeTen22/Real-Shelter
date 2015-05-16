@@ -510,7 +510,7 @@ function ProcessIt: integer;
       if not IsWinningOverride(wthrMR) then exit;
       st := geev(wthrMR,'MNAM');
       if st = '' then exit;
-      if st = 'NULL - Null Reference [00000000]' then exit;
+      if st = 'NULL' then exit;
       st := geev(wthrMR,'EDID');
       
       if Pos('FXMagic', st) > 0 then exit;

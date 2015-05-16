@@ -538,10 +538,6 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
     	mlm := ConstructCheckBox(Form1, mlmOutline, 20, 20, mlmOutline.width-30, 'Add Sheltered Weather To Misty''s FormLists', cbUnchecked);
     	mlmLabel := ConstructLabel(Form1, mlmOutline, mlm.Top+20, mlm.Left+30, 50, 0,'By selecting this, Misty''s Lightning will be able to recognize'#13'sheltered weather, and spawn lightning while under shelter');
 
-    
-
-
-
     	if not bHasRSRO then begin
  			rsro.Enabled := false;
 			rsroLabel.Enabled := false;
