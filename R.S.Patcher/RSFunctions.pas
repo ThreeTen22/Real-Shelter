@@ -498,7 +498,7 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
 	    mlmOutline.Width := rg.Width/2 - 10;
 	    mlmOutline.Left :=  ffOutline.Left;
 	    mlmOutline.Top := ffRSOutline.Top+FFRSOutline.Height + 10;
-	    mlmOutline.Caption := 'Misty''s Lightning Options';
+	    mlmOutline.Caption := 'Minty''s Lightning Options';
 
 
 	    miscOutline := TGroupBox.Create(Form1);
@@ -535,8 +535,8 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
     	wb := ConstructCheckBox(Form1, miscOutline, 20,20,miscOutline.Width-30,'Apply Warburg Fix', cbUnchecked);
     	wbLabel := ConstructLabel(Form1, miscOutline, wb.Top+20, wb.Left+30, 20, 500,'Select this to apply a semi-permanent fix for warburgs'#13'For More Information, please read the info on the left'#13'under the Warnings tab');
 
-    	mlm := ConstructCheckBox(Form1, mlmOutline, 20, 20, mlmOutline.width-30, 'Add Sheltered Weather To Misty''s FormLists', cbUnchecked);
-    	mlmLabel := ConstructLabel(Form1, mlmOutline, mlm.Top+20, mlm.Left+30, 50, 0,'By selecting this, Misty''s Lightning will be able to recognize'#13'sheltered weather, and spawn lightning while under shelter');
+    	mlm := ConstructCheckBox(Form1, mlmOutline, 20, 20, mlmOutline.width-30, 'Add Sheltered Weather To Minty''s FormLists', cbUnchecked);
+    	mlmLabel := ConstructLabel(Form1, mlmOutline, mlm.Top+20, mlm.Left+30, 50, 0,'By selecting this, Minty''s Lightning will be able to recognize'#13'sheltered weather, and spawn lightning while under shelter');
 
     	if not bHasRSRO then begin
  			rsro.Enabled := false;

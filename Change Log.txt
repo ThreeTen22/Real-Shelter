@@ -1,3 +1,9 @@
+1.4.0.7
+R.S.Patcher:
+   -Add the option for Minty's lightning to appear while under shelter. 
+   -Option to remove real shelter's rain splashes (designed for Wonders of Weather users who want one type of splash visual).
+Reuploaded under a new version to fix nexus's same-file issue.
+
 1.4.0.6
 R.S.Patcher:
    -Add the option for Minty's lightning to appear while under shelter. 
