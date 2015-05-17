@@ -8,7 +8,13 @@
 unit RSFunctions;
 
 uses mteFunctions;
+//Not Global Function
 
+
+procedure SMessage(m: string);
+begin
+  if bShowMessages then AddMessage(m);
+end;
 
 procedure ChangeModelPath(localID, newPath: string; sFile,dFile: IInterface);
 var
@@ -29,13 +35,13 @@ procedure GetFormListIDs(localID: string; sFile: IInterface; var tList: TStringL
   fGroup, tForm: IInterface;
   output2 : String;
   begin
-  	AddMessage('SFileName: '+ GetFileName(sFile));
+  	SMessage('SFileName: '+ GetFileName(sFile));
     fGroup := GroupBySignature(sFile, 'FLST');
     //if not Assigned(fGroup) then Exit;
-    AddMessage('FLST Count: '+ IntToStr(Pred(ElementCount(fGroup))));
+    SMessage('FLST Count: '+ IntToStr(Pred(ElementCount(fGroup))));
     for i := 0 to Pred(ElementCount(fGroup)) do begin
       tForm := ElementByIndex(fGroup, i);
-      AddMessage('HexIDs: '+ HexFormID(tForm));
+      SMessage('HexIDs: '+ HexFormID(tForm));
       if Pos(localID, HexFormID(tForm)) > 0 then Break;
       tForm := nil;
     end;
@@ -50,7 +56,7 @@ procedure GetFormListIDs(localID: string; sFile: IInterface; var tList: TStringL
       output2 := geev(tForm, '['+IntToStr(i)+']');
       output2 := CopyFromTo(output2, length(output2)-8,length(output2)-1);
       tList.Append(output2);
-      AddMessage('-Adding '+output2+' to List');
+      SMessage('-Adding '+output2+' to List');
     end;
   end;
 
@@ -59,7 +65,7 @@ procedure SetFormListIDs(localID: String; sFile: IInterface; var dFile: IInterfa
   var
     fileForm: IInterface;
   begin
-  	AddMessage('tsList: '+ tSList.CommaText);
+  	SMessage('tsList: '+ tSList.CommaText);
     while length(localID) < 6 do
       localID := '0'+localID;
     fileForm := GrabFormByLocalID(localID, sFile);
@@ -80,12 +86,12 @@ procedure cleanGRUP(iiFile: IInterface; sGRUP, sMessage: string);
     bHasGroup := HasGroup(iiFile, sGRUP);
     if bHasGroup then begin
       iiCheckGrp := GroupBySignature(iiFile, sGRUP);
-      //RemoveNode(e);
-      AddMessage(sMessage);
-      for i := Pred(ElementCount(iiCheckGrp)) downto 0 do begin
-        e := ElementByIndex(iiCheckGrp, i);
-        Remove(e);
-      end;
+      RemoveNode(iiCheckGrp);
+      SMessage(sMessage);
+      //for i := Pred(ElementCount(iiCheckGrp)) downto 0 do begin
+      //  e := ElementByIndex(iiCheckGrp, i);
+      //  Remove(e);
+      //end;
     end;
   end;
 
@@ -144,9 +150,9 @@ function IsUsingSkyrimWeathers(iiFile: IInterface): boolean;
       tempFormID : string;
     begin
     	Result := false;
-    	AddMessage(' ');
-    	AddMessage(' ');
-    	AddMessage('------  Checking To See If The Supported Regions Uses Vanilla Records');
+    	SMessage(' ');
+    	SMessage(' ');
+    	SMessage('------  Checking To See If The Supported Regions Uses Vanilla Records');
     	regionGrp := GroupBySignature(iiFile,'REGN');
     	for a := 0 to Pred(ElementCount(regionGrp)) do
     	begin
@@ -171,7 +177,26 @@ function IsUsingSkyrimWeathers(iiFile: IInterface): boolean;
 
 
 }
+function AddToRegions(iFile, iOverride, iNew: IInterface): boolean;
+var
+	i: Integer;
+	iRef, iRegionCont, iNewEle: IInterface;
+begin
+	Result := false;
+	SMessage('------  Checking Regions For: '+SmallName(iOverride));
+	for i := 0 to Pred(ReferencedByCount(iOverride)) do begin
+		iRef := ReferencedByIndex(iOverride, i);
+		if Equals(GetFile(iRef), iFile) and (Signature(iRef) = 'REGN') then begin
+			SMessage('--------  Weather Found Inside: '+ ShortName(iRef));
+			iRegionCont := ElementByIp(iRef,'Region Data Entries\Region Data Entry\[1]');
+			iNewEle := ElementAssign(iRegionCont,HighInteger,nil,false);
+    	    senv(iNewEle,'[0]\', FormID(iNew));
+    	    Result := true;
+		end;
+	end;
+end;
 
+{
 function AddToRegions(iiFile: IInterface; WTHRToAdd : cardinal ; FormIDToCompare : string ; nameOfWeather : String ; var regionWCount: TList): boolean;
     var
       a,b,c,d: Integer;
@@ -182,14 +207,14 @@ function AddToRegions(iiFile: IInterface; WTHRToAdd : cardinal ; FormIDToCompare
       regionGrp : IInterface;
     begin
     	Result := false;
-    	AddMessage('------  Checking Regions For: '+'[WTHR:'+FormIDToCompare+']');
+    	SMessage('------  Checking Regions For: '+'[WTHR:'+FormIDToCompare+']');
     	regionGrp := GroupBySignature(iiFile, 'REGN');
     	for a := 0 to Pred(ElementCount(regionGrp)) do
     	begin
     	  	region := ElementByIndex(regionGrp, a);
     	  	wTypesArray := ElementByIp(region,'Region Data Entries\Region Data Entry\[1]');
     	  	if not Assigned(iiFile) then begin 
-    	  		AddMessage('ELementByIp is Broke' + regionData2[a]);
+    	  		SMessage('ELementByIp is Broke' + regionData2[a]);
     	  	end;
     	  	d := ElementCount(wTypesArray);
     	  	for b := 0 to Pred(d) do
@@ -198,7 +223,7 @@ function AddToRegions(iiFile: IInterface; WTHRToAdd : cardinal ; FormIDToCompare
     	    	tempForm := geev(wTypesArray, append);
     	    	if Pos(FormIdToCompare, tempForm) > 0 then 
     	    	begin
-    	    		AddMessage('--------  Weather Found Inside: '+ Name(region));
+    	    		SMessage('--------  Weather Found Inside: '+ Name(region));
     	    		newelement := ElementAssign(wTypesArray,HighInteger,nil,false);
     	    		senv(newelement,'[0]\', WTHRToAdd);
     	    		Result := true;
@@ -206,7 +231,7 @@ function AddToRegions(iiFile: IInterface; WTHRToAdd : cardinal ; FormIDToCompare
 			end;
     	end;
     end;
-
+}
 function GrabFormByLocalID(sLocalFormID: string; iiFile: IInterface): IInterface;
 	var
 	sLoadOrderID: string;
@@ -280,7 +305,7 @@ function Odd(num: integer): boolean;
 // NOT A GLOBAL FUNCTION!
 procedure createOverrideBox(var frm: TObject;var rg: TObject;var pnl: TObject;var iniInfo1: TMemo;var rb1: TCheckBox; var rb2: TCheckBox; var rb3: TCheckBox; var btnOk: TButton; var btnCancel: TButton);
 	var
-		height: Integer;
+		height, i: Integer;
 
 	begin
 	   frm.Caption := '(OUTDATED) Override Module';
@@ -363,14 +388,12 @@ procedure createOverrideBox(var frm: TObject;var rg: TObject;var pnl: TObject;va
 
 
 // NOT A GLOBAL FUNCTION!
-procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObject;var rg:TGroupBox;var btnOk: TButton;var btnAbort: TButton;var btnCancel: TButton; var bQuitting: Boolean;
-			    var bWillUpdateRegions:boolean;var bWillUpdateWarburg:boolean; var bWillUpdateFFLists:boolean; var bWillRemoveVE:boolean;var bWillUseBlankSPG:boolean;var bWillRemoveSnowSpread:boolean;var bWillRemoveRainWS:boolean;var bWillUpdateMlmList:boolean;var bWillTurnOffSplashes:boolean;
-			    var boolList: TList; var results: TModalResult);
+procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObject;var rg:TGroupBox;var btnOk: TButton;var btnAbort: TButton;var btnCancel: TButton; var results: TModalResult);
 
 	//bCorrupt,bRegMod,bHasWeatherList,bHasBackupList,bFreshRSP: boolean;
 
 	var
-		bCorrupt,bRegMod,bHasWeatherList,bHasBackupList,bFreshRSP,bHasFF,bHasRSFF,bHasWOW,bHasCot,bHasWB,bHasRSRO,bHasMLM : Boolean;
+		//bCorrupt,bRegMod,bHasWeatherList,bHasBackupList,bFreshRSP,bHasFF,bHasRSFF,bHasWOW,bHasCot,bHasWB,bHasRSRO,bHasMLM : Boolean;
 		i : Integer;
 		ffOutline, rsOutline, ffRSOutline, miscOutline, rsroOutline, mlmOutline, visOutline: TGroupBox;
 		ff, ff2,rs,rs2, rs3, wb, rsro, mlm, spl: TCheckBox;
@@ -378,29 +401,6 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
 		
 	begin
 	 	i := 0;
-	 	bCorrupt := boolList[i];
-		Inc(i);
-		bRegMod := boolList[i];
-		Inc(i);
-		bHasWeatherList := boolList[i];
-		Inc(i);
-		bHasBackupList := boolList[i];
-		Inc(i);
-		bFreshRSP := boolList[i];
-		Inc(i);
-		bHasWOW := boolList[i];
-		Inc(i);
-		bHasRSFF := boolList[i];
-		Inc(i);
-		bHasFF := boolList[i];
-		Inc(i);
-		bHasCot := boolList[i];
-		Inc(i);
-		bHasWB := boolList[i];
-		Inc(i);
-		bHasRSRO := boolList[i];
-		Inc(i);
-		bHasMLM := boolList[i];
 
 
 		Form1.Height := 600;
@@ -668,7 +668,6 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
 		DiagBox.Lines.Add('-You use an ENB preset that uses weathers' )
 		else
 		DiagBox.Lines.Add('-Your ENB preset does not use weather inis or you do not use ENB' );
-		
 		DiagBox.Lines.Add(' ');
 		if bHasBackupList then
 		DiagBox.Lines.Add('-Your _backupWeatherlist.ini was found in your enbseries folder and it contained weather information')
@@ -735,46 +734,9 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
 		Diagbox.Lines.Add('__________                            ');
 		DiagBox.Lines.Add('Q & A           \_________________________________________________________________');
 		DiagBox.Lines.Add(' ');
-		if not bFreshRSP then
-		begin
-		DiagBox.Lines.Add('Q: I cant create a new RSPatch! / It doesnt seem to do anything.   What do I do?');
-		DiagBox.Lines.Add(' ');
-		DiagBox.Lines.Add('    -If you wish to create a new patch all you need to to is to replace your RSPatch.esp with a fresh copy, you can do that by reinstalling RSPatch.esp through NMM or MO');
-		DiagBox.Lines.Add('    -If you are familiar with Tes5Edit then an alternative to reinstalling is to manually remove all weather and regional records(if applicable) from your loaded RSPatch.esp then run the script again.');
-		end;
-		if bIsBackingUpIni then
-		begin
-		DiagBox.Lines.Add('Q: Why are you backing up my ini file?');
-		DiagBox.Lines.Add(' ');
-		DiagBox.Lines.Add('    -Because new weather records are created everytime you run the realshelterpatch script,  I needed to come up with a way to keep your weatherlist.ini clean.  If I didnt then after 4-5 patches your weatherlist will be full of unused and possibly conflicting formIDs of previous RS records.  Rather than trying to keep track of the FormIDs of previoous patches, which would have been extremely tedious,  I instead chose a much easier solution');
-		DiagBox.Lines.Add(' ');
-		DiagBox.Lines.Add('    -By backing up your weatherlist before filling it up with RS weather ids I can then use it in the same manner that you would use a backup to restore your computer or phone.  I would grab a copy of your _weatherlistBackup file, add in all the newly created FormIDs, and fully replace the real _weatherlist with our new version');
-		DiagBox.Lines.Add(' ');
-		end;
-
-		if bUpdatingWeatherIni and not bIsBackingUpIni then
-		begin
-		DiagBox.Lines.Add('Q: I Used your script and my weather transitions still seem off.');
-		DiagBox.Lines.Add('    -If you are upgrading from Beta:, check your current _weatherlist.ini and see if there are any RealShelter weathers in there');
-		DiagBox.Lines.Add('    -If you want to make sure there is no RS weathers in both your _weatherlist.ini and _weatherlistBackup.ini files, then delete your enbseries folder and reinstall your ENB preset');
-		DiagBox.Lines.Add('    -Try disabling your weather');
-		DiagBox.Lines.Add(' ');
-		end;
-		DiagBox.Lines.Add('Q. I have upgraded from 1.2 to 1.3.1 and it is not working!');
-		DiagBox.Lines.Add('There could be a range of reasons, but first try this, load up your save and put in the console command "set RealShelter_ShelterSwitch to 1" as the mod may have been deactivated. If not then make a post and I will try to solve it asap!  This should not affect those who are upgrading to 1.4.');
-		DiagBox.Lines.Add(' ');
-		DiagBox.Lines.Add('Q. RSPatch has ITM records, can I clean it?');
-		DiagBox.Lines.Add('I have had mixed results from people who cleaned it so I cannot give a definitive answer.  I would stick on the safe side.');
-		DiagBox.Lines.Add(' ');
-		DiagBox.Lines.Add('Q. Does 1.3+ still have the sheltered weather bug, where weather gets stuck?');
-		DiagBox.Lines.Add('Yes, but it happens very rarely.  I have set it up so that if it does occur then all you need to do is reenter a shelter and walk back out again and it should fix itself!');
-		DiagBox.Lines.Add(' ');
-		DiagBox.Lines.Add('Q. I have a more up to date MteFunctions.pas? Which version do I use?');
-		DiagBox.Lines.Add('Use the up to date version');
-		DiagBox.Lines.Add(' ');
-		DiagBox.Lines.Add('Q. Can I merge real shelter and RSPatch or merge any other weather mod?');
-		DiagBox.Lines.Add('No.');
-		DiagBox.Lines.Add(' ');
+		for i := 0 to 10 do
+			Diagbox.Lines.Add(' ');
+		Diagbox.Lines.Add('Good on you for checking this section!...Too bad it didn''t help, so I removed it :/');
 
 	results := Form1.ShowModal;
 	//bQuitting := true;
@@ -810,7 +772,6 @@ procedure createResearchBox(var Form1: TObject;var DiagBox: TMemo;var pnl1: TObj
     		bWillUpdateWarburg := false;
     	end;
 
-
     	if mlm.State = cbChecked then bWillUpdateMlmList := true;
     	if spl.State = cbChecked then bWillTurnOffSplashes := true;
 	end; 
@@ -826,14 +787,14 @@ function CheckForErrors(aIndent: Integer; aElement: IInterface): Boolean;
 	  Result := Error <> '';
 	  if Result then begin
 	    Error := Check(aElement);
-	    AddMessage(StringOfChar(' ', aIndent * 2) + Name(aElement) + ' -> ' + Error);
+	    SMessage(StringOfChar(' ', aIndent * 2) + Name(aElement) + ' -> ' + Error);
 	  end;
 	
 	  for i := ElementCount(aElement) - 1 downto 0 do
 	    Result := CheckForErrors(aIndent + 1, ElementByIndex(aElement, i)) or Result;
 	
 	  if Result and (Error = '') then
-	    AddMessage(StringOfChar(' ', aIndent * 2) + 'Above errors were found in :' + Name(aElement));
+	    SMessage(StringOfChar(' ', aIndent * 2) + 'Above errors were found in :' + Name(aElement));
 	end;
 
 	//THESE HAVE BEEN PORTED OVER FROM AN OLD VERSION OF mteFunctions.pas 

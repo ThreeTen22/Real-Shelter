@@ -52,7 +52,7 @@ uses RSFunctions;
     bWillUpdateMintys: boolean;
 //Misc
     bWillUpdateWarburg, bUsingSkyrimWeathers: boolean;
-    bDebugging, bQuitting: boolean;
+    bDebugging, bQuitting, bShowMessages: boolean;
     trueCheck,  falseCheck, bRegMod, bCorrupt: boolean;
     
 
@@ -77,6 +77,7 @@ begin
     bWillUpdateMlmList := false;
 end;
 
+
 // NOT A GLOBAL FUNCTION!
 function GrabAllTextInfoAndSearch(splitSections:Boolean):  TStringList;
    var
@@ -100,6 +101,9 @@ function GrabAllTextInfoAndSearch(splitSections:Boolean):  TStringList;
         if Pos('0x',secDetails) > 0 then
         usesZeroX := true;
       end;
+
+      iniCtrls.ReadSections(e);
+      SMessage('ReadSections: '+ e.DelimitedText);
 
       for i := 1 to 99 do begin
         
@@ -168,7 +172,7 @@ function findAllTheFiles: integer;
       s1 := Lowercase(s1);
       if bDebugging then
       begin
-        AddMessage('s= ' + s1 + ' at i '+ IntToStr(a));
+        SMessage('s= ' + s1 + ' at i '+ IntToStr(a));
       end;
 
       if (s1 = 'realshelter.esp') then 
@@ -234,25 +238,26 @@ function findAllTheFiles: integer;
       Form3 := GrabFormByLocalID('508B7',RSFile);
     end;
     if not Assigned(RSPFile) and Assigned(RSFile) then begin
-      AddMessage('=== Real Shelter Patch Not Found By Name ===');
-      AddMessage('=== Checking For Real Shelter Overrides ===');
+      SMessage('=== Real Shelter Patch Not Found By Name ===');
+      SMessage('=== Checking For Real Shelter Overrides ===');
       if OverrideCount(Form1) > 0 then begin
-      AddMessage('=== Real Shelter Patch Found! ===');
+      SMessage('=== Real Shelter Patch Found! ===');
       RSPFile := GetFile(WinningOverride(Form1));
       RSPFIndex := GetLoadOrder(RSPFile)+1;
       end;
     end;
     //define important files
     if not Assigned(RSPFile) and Assigned(RSFile) then begin
-      AddMessage('=== No Overrides Found ===');
-      AddMessage('=== Create New RSPatch.esp ===');
+      SMessage('=== No Overrides Found ===');
+      SMessage('=== Create New RSPatch.esp ===');
       RSPFile := AddNewFile;
+      BuildRef(RSPFile);
       seev(RSPFile, 'TES4/CNAM','Real Shelter Patch - Please Do Not Modify This Text');
       RSPFIndex := GetLoadOrder(RSPFile)+1;
     end;
 
     if Assigned(RSPFile) then begin
-      AddMessage('=== Preparing ESP For Patching ===');
+      SMessage('=== Preparing ESP For Patching ===');
       AddRequiredElementMasters(Form1, RSPFile,false);
       AddRequiredElementMasters(Form2, RSPFile,false);
       AddRequiredElementMasters(Form3, RSPFile,false);
@@ -295,13 +300,13 @@ function CleanPatch(checkGrp:IInterface; bCleanup:integer): boolean;
       CurrentList := wbCopyElementToFile(tempList2, RSPFile, false, true);
       WSList := wbCopyElementToFile(tempList3, RSPFile, false, true);
       Add(WSList, 'FormIDs', true);
-      AddMessage('=== Resetting Object ==='); 
-      AddMessage('=== Cleaning Completed ==='); 
+      SMessage('=== Resetting Object ==='); 
+      SMessage('=== Cleaning Completed ==='); 
       bFreshRSP := true;
     end
     else if bCleanup = mrNo then begin
       bFreshRSP := false;
-      AddMessage('=== Skipped Cleaning ===');
+      SMessage('=== Skipped Cleaning ===');
     end;
   end;
 
@@ -387,9 +392,8 @@ function GatherIniInfo: integer;
       boolList.Add(bHasWB);
       boolList.Add(bHasRSRO);
       boolList.Add(bHasMLM);
-      createResearchBox(Form1,DiagBox,pnl1,rg,btnOk,btnAbort,btnCancel, 
-                          bQuitting, bWillUpdateRegions, bWillUpdateWarburg, bWillUpdateFFLists, bWillRemoveVE,bWillUseBlankSPG,bWillRemoveSnowSpread,bWillRemoveRainWS,bWillUpdateMlmList,bWillTurnOffSplashes,
-                          boolList, results);
+      //createResearchBox(Form1,DiagBox,pnl1,rg,btnOk,btnAbort,btnCancel, bQuitting, bWillUpdateRegions, bWillUpdateWarburg, bWillUpdateFFLists, bWillRemoveVE,bWillUseBlankSPG,bWillRemoveSnowSpread,bWillRemoveRainWS,bWillUpdateMlmList,bWillTurnOffSplashes,boolList, results);
+      createResearchBox(Form1,DiagBox,pnl1,rg,btnOk,btnAbort,btnCancel, results);
     if results = mrOk then 
       Result := -1
     else if results = mrCancel then 
@@ -452,10 +456,10 @@ function GrabNonErrorRecord(badRecord: IInterface): IInterface;
   begin
     for i := OverrideCount(badRecord)-1 downto 0 do begin
       tempRecord := OverrideByIndex(badRecord,i);
-       AddMessage('-  Adding '+Name(tempRecord)+'        From File:' + GetFileName(GetFile(tempRecord)));
+       SMessage('-  Adding '+Name(tempRecord)+'        From File:' + GetFileName(GetFile(tempRecord)));
       if CheckForErrors(0,tempRecord) then  begin
-        AddMessage('---ERROR FOUND, PLEASE NOTIFY THE MOD AUTHOR OF THIS FILE: '+ GetFileName(tempRecord));
-        AddMessage('---Could not add record from this file!');
+        SMessage('---ERROR FOUND, PLEASE NOTIFY THE MOD AUTHOR OF THIS FILE: '+ GetFileName(tempRecord));
+        SMessage('---Could not add record from this file!');
         continue;
       end;
       Result := tempRecord;
@@ -524,13 +528,13 @@ function ProcessIt: integer;
       //If frostfall is installed and the option selected it will add sheltered weather into the appropriate formlists.
       try
         AddRequiredElementMasters(wthrMR, RSPFile, false);
-        AddMessage(' ');
-        AddMessage('--  Grabbing: '+ Name(wthrMR));
+        SMessage(' ');
+        SMessage('--  Grabbing: '+ Name(wthrMR));
         new_override := wbCopyElementToFile(wthrMR, RSPFile, False, True);
         new_record := wbCopyElementToFile(wthrMR, RSPFile, True, True);
       except
         On E : Exception do begin
-        AddMessage('--  Grabbing: '+ Name(wthrMR) + ' FAILED! Most Likely due to containing errenous weather info. Please contact the mod author regarding this record!');
+        SMessage('--  Grabbing: '+ Name(wthrMR) + ' FAILED! Most Likely due to containing errenous weather info. Please contact the mod author regarding this record!');
         Remove(new_override);
         Remove(new_record);
         Exit;
@@ -540,7 +544,7 @@ function ProcessIt: integer;
       nrHex := HexFormID(new_record);
       seev(new_record, 'EDID', ('RSP_' + geev(new_record,'EDID - Editor ID')));
       seev(new_record, 'DATA\Trans Delta', 4);
-      AddMessage('----  Created: '+Name(new_record));
+      SMessage('----  Created: '+Name(new_record));
       //This tests whether the weather is rain or not
       //There will be a bool to see if the player wants to turn off wind speed for rain to match RS
       precipNum := genv(wthrMR,'MNAM - Precipitation Type');
@@ -551,7 +555,7 @@ function ProcessIt: integer;
       gV := wbCopyElementToFile(globalVariable, RSPFile, True, True);
       seev(gV , 'EDID - Editor ID', 'WS_'+IntToStr(WindSpeed));
       seev(gV, 'FLTV - Value', WindSpeed);
-      AddMessage('WindSpeed GV: '+Name(gV));
+      SMessage('WindSpeed GV: '+Name(gV));
       
       if bWillUseBlankSPG then 
       begin
@@ -587,12 +591,13 @@ function ProcessIt: integer;
       //Add RS weathers to all regions supported by real shelter
       if bWillUpdateRegions then 
       begin
-        if bUsingSkyrimWeathers or not(Pos('00',ovHex) = 1) then begin
-          AddToRegions(RSPFile,FormID(new_record), ovHex, Name(new_record), regionWTHRCount);
-          AddMessage('--Added ' + Name(new_record) +' To All Appropriate Regions');
-        end else begin
-          AddMessage('---Skipping: This Weather Is Not Used In Any Region');
-        end;
+        //if bUsingSkyrimWeathers or not(Pos('00',ovHex) = 1) then begin
+          if AddToRegions(RSPFile, MasterOrSelf(new_override), new_record) then
+          SMessage('--Added ' + ShortName(new_record) +' To All Appropriate Regions') 
+          else SMessage('--No Regions Use This Weather');
+        //end else begin
+        //   SMessage('---Skipping: This Weather Is Not Used In Any Region');
+        //end;
       end;
        //Will update frostfall's Formlists to recognize Real Shelter's weather.
       if bWillUpdateFFLists then 
@@ -603,13 +608,13 @@ function ProcessIt: integer;
         if Pos(getLocalHexID(new_override, true), FFVanillaFormIDs) > 0 then begin
           FFSevereList.Append(ovHex);
         end;
-        AddMessage('--Weather Used In Frostfall''s Severe Weather List!');
+        SMessage('--Weather Used In Frostfall''s Severe Weather List!');
       end;
       
       if bWillUpdateMlmList then begin
         if MLMList.IndexOf(ovHex) <> -1 then begin 
         MLMList.Append(nrHex);
-        AddMessage('--Weather Used In Minty''s Lightning List!');
+        SMessage('--Weather Used In Minty''s Lightning List!');
         end;
       end;
       //Adding both override and new weather records into stringlists that are used for updating the _weatherlist.ini file
@@ -630,14 +635,14 @@ procedure GrabFFListsAndAddForms;
       temp1  : String;
 
       begin
-          AddMessage('--Adding RealShelter Weathers to Frostfalls Severe WeatherList');
+          SMessage('--Adding RealShelter Weathers to Frostfalls Severe WeatherList');
           FFFile := FileByName('Chesko_Frostfall.esp');
           temp1 := LocalIdToLoadOrderID('024098',FFFile, true);
           FFFList :=  RecordByFormID(FFFile, StrToInt64(temp1), false);
           AddRequiredElementMasters(FFFList, RSPFile, false);
           FFFListOverride := wbCopyElementToFile(FFFList, RSPFile, false, true);
           Slev(FFFListOverride, 'FormIDs',FFSevereList);
-          AddMessage('-- Modifications Complete');
+          SMessage('-- Modifications Complete');
       end;
 
 procedure AddPatchedWeathersToStringLists(var fIdToAdd: TStringList; var fIdToSearch: TStringList);
@@ -700,9 +705,9 @@ procedure ReserveLocalFormIDs();
         SetLoadOrderFormID(iiNewGMST,finalID);
       except
         On E: Exception do begin
-        AddMessage('--Supplied Incorrect FormID : Please Check Your _weatherlistBackup.ini For This Hex:');
-        AddMessage('----Faulty Weather Form: '+ weatherRecords[i]);
-        AddMessage('------Most likely you have more than one of the above record in your ini file!');
+        SMessage('--Supplied Incorrect FormID : Please Check Your _weatherlistBackup.ini For This Hex:');
+        SMessage('----Faulty Weather Form: '+ weatherRecords[i]);
+        SMessage('------Most likely you have more than one of the above record in your ini file!');
         end;
       end;
     end;
@@ -767,22 +772,23 @@ function finalize: integer;
     bUpdatingWeatherIni := false;
     bDebugging := false;
     bUsingSkyrimWeathers := false;
+    bShowMessages := true;
     tempS := GetVersionStringRS(wbVersionNumber);
     for z := 0 to 30 do
-    AddMessage('');
-    AddMessage('================================');
-    AddMessage('========== R.S.Patcher 1.5.1 ========== ');
-    AddMessage('================================');
-    AddMessage('');
-    AddMessage('=== Checking TES5EDIT Version ===');
-    AddMessage('Using Version '+ tempS);
+    SMessage('');
+    SMessage('================================');
+    SMessage('========== R.S.Patcher 1.5.1 ========== ');
+    SMessage('================================');
+    SMessage('');
+    SMessage('=== Checking TES5EDIT Version ===');
+    SMessage('Using Version '+ tempS);
     if Pos('3.1.',tempS) = 0 then begin
       MessageDlg('RSPatcher 1.5:  TES5Edit Version Mismatch'#13#13'This Patcher Requires'#13'TES5Edit 3.1.0+'#13#13'You are currently using'#13'TES5Edit '+tempS+''#13#13'You can find the most up-to-date version on the nexus'#13'Patcher will now exit',mtError, [mbOK], 0);
       Result := -1;
       Exit;
     end;
     RemoveFilter();
-    AddMessage('=== Gathering ModList Information === ');
+    SMessage('=== Gathering ModList Information === ');
     SetGlobals();
     findAllTheFiles;
 
@@ -810,30 +816,30 @@ function finalize: integer;
     end;
     if bQuitting then
     begin
-      AddMessage('User Has Quit');
+      SMessage('User Has Quit');
       RemoveFilter();
       Result := -1;
       Exit;
     end;
     if bDebugging then
     begin
-      AddMessage('The CurrentCheckboxes give you:  Update Plugin: '+ BoolToStr(bUpdatingPlugin)  + ' andUpdatingWeathers: '+ BoolToStr(bUpdatingWeatherIni));
+      SMessage('The CurrentCheckboxes give you:  Update Plugin: '+ BoolToStr(bUpdatingPlugin)  + ' andUpdatingWeathers: '+ BoolToStr(bUpdatingWeatherIni));
     end;
     if not bUpdatingPlugin and not bUpdatingWeatherIni then
     begin
       Result := -1;
-      AddMessage('Exiting...');
+      SMessage('Exiting...');
       RemoveFilter();
       Exit;
     end;
     if bDebugging then
     begin
-      AddMessage('Made it through GetFileGamePath()');
-      AddMessage('Initbegin value of s = '+ s);
+      SMessage('Made it through GetFileGamePath()');
+      SMessage('Initbegin value of s = '+ s);
     end;
     if bWillUpdateWarburg then begin
       if not FixWarburg(RSPFile, WBFile) then begin
-        AddMessage('Warburg Fix already applied,  Quitting');
+        SMessage('Warburg Fix already applied,  Quitting');
         Result := -1;
         Exit;
       end;
@@ -850,13 +856,13 @@ function finalize: integer;
     end;
     //Change that needs to be changing before doing whole loop
     if bUpdatingPlugin and bUpdatingWeatherIni then begin
-      AddMessage(' ');
-      AddMessage('=== Creating Temporary Records to Reserve Conflicting FormIDs ===');
+      SMessage(' ');
+      SMessage('=== Creating Temporary Records to Reserve Conflicting FormIDs ===');
       ReserveLocalFormIDs();
-      AddMessage(' ');
+      SMessage(' ');
     end;
     //Check if mintys lightning will occur- if so then prepare TStringLists
-    AddMessage('AddMlM TStringListCode');
+    SMessage('AddMlM TStringListCode');
     if bWillUpdateMlmList then
     begin
       //LocalID, File, TStringList
@@ -866,43 +872,43 @@ function finalize: integer;
     
     if bWillUpdateRegions then
     begin
-      AddMessage(' ');
-      AddMessage('=== Adding Regions ==='); 
-      AddMessage(' ');
+      SMessage(' ');
+      SMessage('=== Adding Regions ==='); 
+      SMessage(' ');
       AddRegionsToRSPatch;
       regionWTHRCount := TList.Create;
       RegionWeatherCount(RSPFile);
-      AddMessage('=== Gathering Weather Data Inside of Regions ==='); 
+      SMessage('=== Gathering Weather Data Inside of Regions ==='); 
 
-      bUsingSkyrimWeathers := IsUsingSkyrimWeathers(RSPFile);
-      if bUsingSkyrimWeathers then
-        AddMessage('---Vanilla Weathers are Used')
-      else
-        AddMessage('---Vanilla Weathers are NOT Used');
+      //bUsingSkyrimWeathers := IsUsingSkyrimWeathers(RSPFile);
+      //if bUsingSkyrimWeathers then
+      //  SMessage('---Vanilla Weathers are Used')
+      //else
+      //  SMessage('---Vanilla Weathers are NOT Used');
       seev(WinningOverride(globalVariable),'FLTV - Value', '1.0');
       //Add RS weathers to all regions supported by real shelter
       //AddToRegions(regionData,HexFormID(new_record), HexFormID(new_override), Name(new_record));
     end
     else
     begin
-      AddMessage(' ');
-      AddMessage('=== Skipping Region Additions ==='); 
-      AddMessage(' ');
+      SMessage(' ');
+      SMessage('=== Skipping Region Additions ==='); 
+      SMessage(' ');
       seev(WinningOverride(globalVariable),'FLTV - Value', '0.0');
     end;
 
-    AddMessage(' ');
+    SMessage(' ');
     if bUpdatingPlugin then
-    AddMessage('=== Going Through Files And Grabbing Appropriate Weathers ===')
+    SMessage('=== Going Through Files And Grabbing Appropriate Weathers ===')
     else
-    AddMessage('=== Skipping Weather Processes ===');
+    SMessage('=== Skipping Weather Processes ===');
     for fIndex := RSPFIndex-1 downto 0 do 
     begin
       if Lowercase(GetFileName(FileByIndex(fIndex))) = Lowercase('RealShelter.esp') then continue;
       if not (HasGroup(FileByIndex(fIndex), 'WTHR')) then continue;
       if bUpdatingPlugin then begin
-        AddMessage(' ');
-        AddMessage('------------------------------------------------------------------- Checking File: '+ GetFileName(FileByIndex(fIndex)));
+        SMessage(' ');
+        SMessage('------------------------------------------------------------------- Checking File: '+ GetFileName(FileByIndex(fIndex)));
       end;
       wthrGrp := GroupBySignature(FileByIndex(fIndex), 'WTHR');
       for fIndex2 := 0 to (ElementCount(wthrGrp) - 1) do
@@ -922,15 +928,15 @@ function finalize: integer;
     fIdIndex := TStringList.Create;
     if(bUpdatingPlugin) then
     begin
-      AddMessage(' ');
-      AddMessage('=== Adding Appropriate Weathers To FormLists ==='); 
-      AddMessage(' ');
+      SMessage(' ');
+      SMessage('=== Adding Appropriate Weathers To FormLists ==='); 
+      SMessage(' ');
       Slev(CurrentList, 'FormIDs', idCurrents);
-      AddMessage('Success!  Added All Your Precipitation Weathers To RS_CurrentList');
+      SMessage('Success!  Added All Your Precipitation Weathers To RS_CurrentList');
       Slev(RSPList, 'FormIDs', idRSs);
-      AddMessage('Success!  Added All Your Sheltered Weathers To RS_RSList');
+      SMessage('Success!  Added All Your Sheltered Weathers To RS_RSList');
       Slev(WSList, 'FormIDs', WSStringList);
-      AddMessage('Success!  Added All Wind Speed Global Variables to RS_WSList');
+      SMessage('Success!  Added All Wind Speed Global Variables to RS_WSList');
       if bHasCoT then
       begin
         ReverseElements(ElementByIp(CurrentList, 'FormIDs'));
@@ -939,35 +945,35 @@ function finalize: integer;
       end;
     
       if bHasFF and bWillUpdateFFLists then begin
-        AddMessage(' ');
-        AddMessage('=== Frostfall/Campfire Modifications ===');
+        SMessage(' ');
+        SMessage('=== Frostfall/Campfire Modifications ===');
         GrabFFListsAndAddForms;
       end
       else  begin
-        AddMessage(' ');
-        AddMessage('=== Skipping Frostfall/Campfire Modifications ===');
+        SMessage(' ');
+        SMessage('=== Skipping Frostfall/Campfire Modifications ===');
       end;
       
       if bWillUpdateMlmList then begin
-        AddMessage(' ');
-        AddMessage('=== Minty''s Lightning Modifications ===');
+        SMessage(' ');
+        SMessage('=== Minty''s Lightning Modifications ===');
         SetFormListIDs('01D776', FileByIndex(MLMIndex), RSPFile, MLMList);;
-        AddMessage('-- Modifications Complete')
+        SMessage('-- Modifications Complete')
       end
       else begin
-        AddMessage(' ');
-        AddMessage('=== Skipping Minty''s Lightning Modifications ===');
+        SMessage(' ');
+        SMessage('=== Skipping Minty''s Lightning Modifications ===');
       end;
       
       if bWillTurnOffSplashes then begin
-        AddMessage(' ');
-        AddMessage('=== Wonders of Weather Modifications ===');
+        SMessage(' ');
+        SMessage('=== Wonders of Weather Modifications ===');
         ChangeModelPath('055486',' ', RSFile, RSPFile);
-        AddMessage('-- Modifications Complete');
+        SMessage('-- Modifications Complete');
       end
       else  begin
-        AddMessage(' ');
-        AddMessage('=== Skipping Wonders of Weather Modifications ===');
+        SMessage(' ');
+        SMessage('=== Skipping Wonders of Weather Modifications ===');
       end;
 
 
@@ -988,27 +994,27 @@ function finalize: integer;
       AddPatchedWeathersToStringLists(fIdToAdd, fIdToSearch);
     end;
     if bDebugging then 
-    AddMessage('about to search through weathers');
+    SMessage('about to search through weathers');
     if (bUpdatingWeatherIni) then 
     begin
-      AddMessage(' ');
-      AddMessage('=== Adding Weathers To _WeatherList.ini ==='); 
-      AddMessage(' ');
-      AddMessage('_weatherlist.ini Directory : '+ eDir);
-      AddMessage('_weatherlistBackup.ini Directory : ' + bDir);
-      AddMessage(' ');
+      SMessage(' ');
+      SMessage('=== Adding Weathers To _WeatherList.ini ==='); 
+      SMessage(' ');
+      SMessage('_weatherlist.ini Directory : '+ eDir);
+      SMessage('_weatherlistBackup.ini Directory : ' + bDir);
+      SMessage(' ');
       fIniDB := GrabAllTextInfoAndSearch(falseCheck);
       iniCtrl := TMemIniFile.Create(directory);
       for z := 0 to fIniDB.Count-1 do
       begin
         if bDebugging then
-        AddMessage('Inside of fIniDB with z at  '+IntToStr(z));
+        SMessage('Inside of fIniDB with z at  '+IntToStr(z));
         for zz := 0 to fIdToSearch.Count-1 do
         begin
           tempStr := UpperCase(fIniDB[z]);
           if Pos(fIdToSearch[zz], tempStr) > 0 then
           begin
-          AddMessage('Adding ' + fIdToAdd[zz] + ' to WEATHER0' + IntToStr(z+1)+ ' By Matching Hex Number: ' + fIdToSearch[zz]);
+          SMessage('Adding ' + fIdToAdd[zz] + ' to WEATHER0' + IntToStr(z+1)+ ' By Matching Hex Number: ' + fIdToSearch[zz]);
           fIniDB[z] := fIniDB[z] + ' ' + fIdToAdd[zz];  
           end;
         end;
@@ -1032,13 +1038,13 @@ function finalize: integer;
     if Assigned(regionWTHRCount) then regionWTHRCount.Free;
     cleanGRUP(RSPFile, 'KYWD','=== Removing Temporary Records ===');
     //for some reason I am unable to call idToAdd.Free; as it gives me a pointer error.  I have no idea how to fix it .
-    AddMessage('=== Cleaning And Sorting Masters ==='); 
+    SMessage('=== Cleaning And Sorting Masters ==='); 
     CleanMasters(RSPFile);
     SortMasters(RSPFile);
     RemoveFilter();
-    AddMessage('=== =====================  ===');
-    AddMessage('=== Successfully Created Your Patch! ===');
-    AddMessage('=== =====================  ===');
+    SMessage('=== =====================  ===');
+    SMessage('=== Successfully Created Your Patch! ===');
+    SMessage('=== =====================  ===');
   end;
 
 end.
