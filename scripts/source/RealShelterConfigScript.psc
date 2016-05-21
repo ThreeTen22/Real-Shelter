@@ -1,7 +1,7 @@
 Scriptname RealShelterConfigScript extends SKI_ConfigBase  
 
-; RS 1.4
-; 04/01/2014
+; RS 1.5
+; 05/20/2016
 
 ;===============================================================
 
@@ -315,7 +315,7 @@ EndEvent
 
 Event OnVersionUpdate(int a_version)
   If a_version == 141
-    Debug.Notification("Updating Real Shelter MCM to 1.4")
+    Debug.Notification("Updating Real Shelter MCM to 1.5")
     Pages = New String[3]
     Pages[0] = "Options"
     Pages[1] = "Textures"
@@ -349,10 +349,10 @@ EndIf
 EndFunction
 
 Function LocalChecks()
-Debug.Trace("Real Shelter Config:  Checking For Frostfall:")
+Debug.Trace("Real Shelter Config:  Checking For Real Shelter: Frostfall")
 hasFrostfall = Game.GetFormFromFile(0x00005399, "RealShelterFF.esp")
 cVal = hasFrostfall
-Debug.Trace("Frostfall Found? " + cVal)
+Debug.Trace("Real Shelter: Frostfall Found? " + cVal)
 if !(cVal)
   RS_FFISOn.SetValue(0)
 Else
