@@ -47,7 +47,6 @@ Event OnEffectFinish(Actor akTarget, Actor akCaster)
 	EndIf
 
 	RunningRS.clear()
-	RunningRS.OnTriggerLeave(none)
   	;If Type != 0
   	;	rsDebug = RS_Debug.GetValue()
   	;	If Type == 3
