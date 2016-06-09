@@ -76,10 +76,6 @@ Event OnTrigger(ObjectReference akActionRef)
 
 EndEvent
 
-;Function ActivateShelter()
-;   DebugString("I Should Never Hit This Activate Shelter!")
-;EndFunction 
-
 Event OnTriggerEnter(ObjectReference akActionRef)
     Int WaitMax = 0
     While GetOwningQuest().GetState() == "Busy" && WaitMax < 5
@@ -119,15 +115,8 @@ Function ActivateShelter()
         DebugString("Alias1: Activating Shelter")
         EnableFX(EnableParent2, false)
         EnableFX(EnableParent1, true)
-        If (WTHRType == 2)
-          ActivateSound(rainSound,RS_RainSoundVolume.GetValue(),EnableParent1, EnableParent2)
-        Else
-          ActivateSound(snowSound,RS_SnowSoundVolume.GetValue(),EnableParent1, EnableParent2)
-        EndIf
-      ElseIf AliasType == 1
-        DebugString("Alias2: Activating Shelter")
-        ReplaceWeather(RS_FluidTransitions.GetValue())
-        UpdateFormLists(Indx)
+      ElseIf AliasType == 1 && GetCurrentWeatherTransition() == 1.0
+        WeatherPlugin.SetPrecipitationDisabled(1)
       EndIf
     EndIf 
 EndFunction 
@@ -154,11 +143,12 @@ EndFunction
 
 Function RevertWeather(Form wthrForm)
     ;DebugString("Inside RevertWeather", 1)
-    if RS_RSList.HasForm(wthrForm)
-      Int Indx = RS_RSList.Find(wthrForm)
-      CurrentWeather = RS_CurrentList.GetAt(Indx) as Weather
-      CurrentWeather.ForceActive()
-    EndIf
+    WeatherPlugin.SetPrecipitationDisabled(0)
+    ;if RS_RSList.HasForm(wthrForm)
+    ;  Int Indx = RS_RSList.Find(wthrForm)
+    ;  CurrentWeather = RS_CurrentList.GetAt(Indx) as Weather
+    ;  CurrentWeather.ForceActive()
+    ;EndIf
     ;Debug.MessageBox("rsWTHRIndx != -1" + (RS_CurrentList.GetAt(rsWTHRIndx) as Weather))  
 EndFunction
 
