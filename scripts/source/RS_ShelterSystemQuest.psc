@@ -3,8 +3,17 @@ Scriptname RS_ShelterSystemQuest extends Quest
 GetShelterTBScript Property CurrentShelter Auto Hidden
 GlobalVariable Property RS_Debug Auto
 
+Bool busy = false
+Bool Property isBusy Hidden
+	Bool Function get()
+		return busy
+	EndFunction
+EndProperty
+
+
+
 Function EnterTrigger(GetShelterTBScript tb, ObjectReference eP1, ObjectReference eP2)
-	GoToState("Busy")
+	busy = true
 	Float debugValue = RS_Debug.GetValue()
 	If tb != CurrentShelter
 		If CurrentShelter
@@ -12,21 +21,16 @@ Function EnterTrigger(GetShelterTBScript tb, ObjectReference eP1, ObjectReferenc
 		EndIf
 		CurrentShelter = tb
 		(GetAlias(0) as RS_TBAliasBase).SetShelter(tb, eP1, eP2, debugValue)
-		Utility.Wait(0.01)
 		(GetAlias(1) as RS_TBAliasBase).SetShelter(tb, eP1, eP2, debugValue)
 		tb.IsActiveShelter = true
 	EndIf
-	GoToState("")
+	busy = false
 EndFunction
-
-State Busy
-
-EndState
 
 Function StartRegister(Int Index)
 	RegisterForUpdateGameTime(index)
 EndFunction
 
 Function ShutDown()
-	CurrentShelter = none;
+	CurrentShelter = none
 EndFunction

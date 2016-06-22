@@ -1,6 +1,5 @@
 Scriptname RS_PCConditionals extends ActiveMagicEffect  
-{Checks for player specific events like OnSleep And On 1st - 3rd person Switch.
-Compiling a few conditional checks into one to save space}
+{Checks for change in weather and modifies the }
 import Debug
 import weather
 
@@ -29,13 +28,13 @@ Event OnEffectStart(Actor akTarget, Actor akCaster)
 	   	if RS_Debug.GetValue() != 0
 	   		Notification("I Have started To Rain")
 	   	EndIf
-	   	RunningRS.ForceRefTo(Game.GetPlayer())
+	   	RunningRS.ForceRefTo(akTarget)
 	ElseIf GetCurrentWeather().getClassification() == 3
 		RainBeamToSnow()
 	   	if RS_Debug.GetValue() != 0
 	   		Notification("I Have started To Snow")
 	   	EndIf
-	   	RunningRS.ForceRefTo(Game.GetPlayer())
+	   	RunningRS.ForceRefTo(akTarget)
 	EndIf
 EndEvent
 

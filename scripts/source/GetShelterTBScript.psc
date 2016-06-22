@@ -28,7 +28,7 @@ EndState
 
 Event OnTriggerLeave(ObjectReference akActionRef)
   Int WaitMax = 0
-  While RS_ShelterSystem.GetState() == "Busy" && WaitMax < 5
+  While RS_ShelterSystem.isBusy && WaitMax < 5
     Utility.Wait(0.1)
     WaitMax+=1
   EndWhile
